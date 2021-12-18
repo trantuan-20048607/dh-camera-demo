@@ -50,10 +50,12 @@ private:
 
     static unsigned int camera_number_;
 
+    bool PixelFormatConvert(PGX_FRAME_BUFFER);
+
     GX_DEV_HANDLE device_ = nullptr;
     int64_t color_filter_ = GX_COLOR_FILTER_NONE;
     int64_t payload_size_ = 0;
-    unsigned char *rgb_8_to_rgb_24_cache_ = nullptr;
+    unsigned char *raw_8_to_rgb_24_cache_ = nullptr;
     unsigned char *raw_16_to_8_cache_ = nullptr;
     bool thread_alive_ = false;
     pthread_t thread_id_ = 0;

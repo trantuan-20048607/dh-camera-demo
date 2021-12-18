@@ -4,6 +4,9 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #define ACQ_BUFFER_NUM          5               ///< Acquisition Buffer Qty.
 #define ACQ_TRANSFER_SIZE       (64 * 1024)     ///< Size of data transfer block
@@ -19,9 +22,9 @@ if ((status_code) != GX_STATUS_SUCCESS) {                 \
         delete[] raw_16_to_8_cache_;                      \
         raw_16_to_8_cache_ = nullptr;                     \
     }                                                     \
-    if (rgb_8_to_rgb_24_cache_ != nullptr) {              \
-        delete[] rgb_8_to_rgb_24_cache_;                  \
-        rgb_8_to_rgb_24_cache_ = nullptr;                 \
+    if (raw_8_to_rgb_24_cache_ != nullptr) {              \
+        delete[] raw_8_to_rgb_24_cache_;                  \
+        raw_8_to_rgb_24_cache_ = nullptr;                 \
     }                                                     \
     std::cout << GetErrorInfo(status_code) << std::endl;  \
     return ERR_CAMERA_INTERNAL_ERROR;                     \
@@ -182,7 +185,7 @@ DHCamera::ErrorCode DHCamera::CloseCamera() {
 
 DHCamera::ErrorCode DHCamera::StartAcquisition() {
     // Allocate memory for cache.
-    rgb_8_to_rgb_24_cache_ = new unsigned char[payload_size_ * 3];
+    raw_8_to_rgb_24_cache_ = new unsigned char[payload_size_ * 3];
     raw_16_to_8_cache_ = new unsigned char[payload_size_];
 
     // Open the stream.
@@ -209,9 +212,9 @@ DHCamera::ErrorCode DHCamera::StopAcquisition() {
         delete[] raw_16_to_8_cache_;
         raw_16_to_8_cache_ = nullptr;
     }
-    if (rgb_8_to_rgb_24_cache_ != nullptr) {
-        delete[] rgb_8_to_rgb_24_cache_;
-        rgb_8_to_rgb_24_cache_ = nullptr;
+    if (raw_8_to_rgb_24_cache_ != nullptr) {
+        delete[] raw_8_to_rgb_24_cache_;
+        raw_8_to_rgb_24_cache_ = nullptr;
     }
 
     return SUCCESS;
@@ -229,11 +232,9 @@ void *DHCamera::ThreadProc(void *obj) {
     time_t end_time;
     uint32_t frame_count = 0;
 
-    while (self->thread_alive_) {
-        if (!frame_count) {
-            time(&start_time);
-        }
+    time(&start_time);
 
+    while (self->thread_alive_) {
         status_code = GXDQBuf(self->device_, &self->frame_buffer_, 1000);
         if (status_code != GX_STATUS_SUCCESS) {
             if (status_code == GX_STATUS_TIMEOUT) {
@@ -244,29 +245,90 @@ void *DHCamera::ThreadProc(void *obj) {
             }
         }
 
-        if (self->frame_buffer_->nStatus != GX_FRAME_STATUS_SUCCESS) {
-            std::cout << GetErrorInfo(self->frame_buffer_->nStatus) << std::endl;
-        } else {
-            frame_count++;
-            time(&end_time);
-            if (end_time - start_time >= 1) {
-                printf("<Successful acquisition: FrameCount: %u Width: %d Height: %d FrameID: %lu>\n",
-                       frame_count,
-                       self->frame_buffer_->nWidth,
-                       self->frame_buffer_->nHeight,
-                       self->frame_buffer_->nFrameID);
-
-                frame_count = 0;
-            }
-        }
-
         status_code = GXQBuf(self->device_, self->frame_buffer_);
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
             break;
         }
+
+        if (self->frame_buffer_->nStatus != GX_FRAME_STATUS_SUCCESS) {
+            std::cout << GetErrorInfo(self->frame_buffer_->nStatus) << std::endl;
+        } else {
+            frame_count++;
+            self->PixelFormatConvert(self->frame_buffer_);
+            cv::Mat mat = cv::Mat(self->frame_buffer_->nHeight,
+                                  self->frame_buffer_->nWidth,
+                                  CV_8UC3,
+                                  self->raw_8_to_rgb_24_cache_);
+            cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
+            cv::putText(mat, std::to_string(frame_count), cv::Point(0, 24), cv::FONT_HERSHEY_DUPLEX, 1,
+                        cv::Scalar(0, 255, 0), 1, false);
+            cv::imshow("CAM", mat);
+        }
+
+        if ((cv::waitKey(5) & 0xff) == 'q') {
+            self->StopAcquisition();
+        }
     }
+
+    time(&end_time);
+
+    cv::destroyAllWindows();
     return nullptr;
+}
+
+bool DHCamera::PixelFormatConvert(PGX_FRAME_BUFFER frame_buffer) {
+    VxInt32 dx_status_code;
+
+    // Convert RAW8 or RAW16 image to RGB24 image.
+    switch (frame_buffer->nPixelFormat) {
+        case GX_PIXEL_FORMAT_BAYER_GR8:
+        case GX_PIXEL_FORMAT_BAYER_RG8:
+        case GX_PIXEL_FORMAT_BAYER_GB8:
+        case GX_PIXEL_FORMAT_BAYER_BG8: {
+            // Convert to the RGB image.
+            dx_status_code = DxRaw8toRGB24((unsigned char *) frame_buffer->pImgBuf, raw_8_to_rgb_24_cache_,
+                                           frame_buffer->nWidth,
+                                           frame_buffer->nHeight,
+                                           RAW2RGB_NEIGHBOUR, DX_PIXEL_COLOR_FILTER(color_filter_), false);
+            if (dx_status_code != DX_OK) {
+                std::cout << "DxRaw8toRGB24 Failed, Error Code: " << dx_status_code << std::endl;
+                return false;
+            }
+            break;
+        }
+        case GX_PIXEL_FORMAT_BAYER_GR10:
+        case GX_PIXEL_FORMAT_BAYER_RG10:
+        case GX_PIXEL_FORMAT_BAYER_GB10:
+        case GX_PIXEL_FORMAT_BAYER_BG10:
+        case GX_PIXEL_FORMAT_BAYER_GR12:
+        case GX_PIXEL_FORMAT_BAYER_RG12:
+        case GX_PIXEL_FORMAT_BAYER_GB12:
+        case GX_PIXEL_FORMAT_BAYER_BG12: {
+            // Convert to the Raw8 image.
+            dx_status_code = DxRaw16toRaw8((unsigned char *) frame_buffer->pImgBuf, raw_16_to_8_cache_,
+                                           frame_buffer->nWidth,
+                                           frame_buffer->nHeight, DX_BIT_2_9);
+            if (dx_status_code != DX_OK) {
+                std::cout << "DxRaw16toRaw8 failed, error code: " << dx_status_code << std::endl;
+                return false;
+            }
+            // Convert to the RGB24 image.
+            dx_status_code = DxRaw8toRGB24(raw_16_to_8_cache_, raw_8_to_rgb_24_cache_, frame_buffer->nWidth,
+                                           frame_buffer->nHeight,
+                                           RAW2RGB_NEIGHBOUR, DX_PIXEL_COLOR_FILTER(color_filter_), false);
+            if (dx_status_code != DX_OK) {
+                std::cout << "DxRaw16toRGB24 failed, error code: " << dx_status_code << std::endl;
+                return false;
+            }
+            break;
+        }
+        default: {
+            std::cout << "Error: PixelFormat of this camera is not supported." << std::endl;
+            return false;
+        }
+    }
+    return true;
 }
 
 std::string DHCamera::GetVendorName() {
