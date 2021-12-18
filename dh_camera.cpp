@@ -24,11 +24,11 @@ if ((status_code) != GX_STATUS_SUCCESS) {                 \
     return ERR_CAMERA_INTERNAL_ERROR;                     \
 }
 
-// 全局相机计数，此数据操作与 device_ 是否为空紧密相关
+// Number of objects with its device_ not nullptr.
 unsigned int DHCamera::camera_number_ = 0;
 
 DHCamera::DHCamera() {
-    // 加载 .so 库
+    // Load external dynamic libraries.
     if (GXInitLib() != GX_STATUS_SUCCESS) {
         throw std::runtime_error("GX libraries not found.");
     }
@@ -41,12 +41,11 @@ DHCamera::~DHCamera() {
     if (device_ != nullptr) {
         CloseCamera();
     }
-    GXCloseLib();
 }
 
 DHCamera::ErrorCode DHCamera::OpenCamera(uint32_t device_id) {
 
-// 检查各个步骤的返回值，请勿在其他函数中调用
+// This macro is used to check the return code of each step, and should NOT appear outside this function.
 #define GX_CHECK_STATUS(status_code)                      \
     if ((status_code) != GX_STATUS_SUCCESS) {             \
     std::cout << GetErrorInfo(status_code) << std::endl;  \
@@ -57,22 +56,22 @@ DHCamera::ErrorCode DHCamera::OpenCamera(uint32_t device_id) {
     GX_STATUS status_code;
     uint32_t device_num = 0;
 
-    // 枚举设备
+    // Get device list.
     status_code = GXUpdateDeviceList(&device_num, 1000);
     if (status_code != GX_STATUS_SUCCESS) {
         std::cout << GetErrorInfo(status_code) << std::endl;
     }
 
-    // 检查是否有设备连接
+    // Find at least 1 device.
     if (device_num <= 0) {
         return ERR_DEVICE_NOT_FOUND;
     }
 
-    // 打开指定设备
+    // Open the device of specified index.
     status_code = GXOpenDeviceByIndex(device_id, &device_);
     GX_CHECK_STATUS(status_code)
 
-    // 检查是否能获取各项参数
+    // Check if it's factory setting can be read.
     if (GetVendorName().empty() ||
         GetModelName().empty() ||
         GetSerialNumber().empty() ||
@@ -81,14 +80,14 @@ DHCamera::ErrorCode DHCamera::OpenCamera(uint32_t device_id) {
         return ERR_CAMERA_INTERNAL_ERROR;
     }
 
-    // 判断是否是彩色相机
+    // Check if it's mono or color camera.
     bool has_color_filter = false;
     status_code = GXIsImplemented(device_, GX_ENUM_PIXEL_COLOR_FILTER, &has_color_filter);
     GX_CHECK_STATUS(status_code)
 
-    // 此程序不支持黑白相机
+    // Mono cameras are NOT supported.
     if (!has_color_filter) {
-        std::cout << "{!}{Mono cameras are not supported}";
+        std::cout << "{!}{Mono cameras are NOT supported}";
         device_ = nullptr;
         return ERR_UNSUPPORTED_CAMERA;
     } else {
@@ -96,30 +95,28 @@ DHCamera::ErrorCode DHCamera::OpenCamera(uint32_t device_id) {
         GX_CHECK_STATUS(status_code)
     }
 
-    // 设置 Payload 大小
+    // Get payload size.
     status_code = GXGetInt(device_, GX_INT_PAYLOAD_SIZE, &payload_size_);
     GX_CHECK_STATUS(status_code)
 
-
-    // 设置取图模式为连续
+    // Set acquisition mode to continuous.
     status_code = GXSetEnum(device_, GX_ENUM_ACQUISITION_MODE, GX_ACQ_MODE_CONTINUOUS);
     GX_CHECK_STATUS(status_code)
 
-    // 设置触发器关闭
+    // Turn off the trigger.
     status_code = GXSetEnum(device_, GX_ENUM_TRIGGER_MODE, GX_TRIGGER_MODE_OFF);
     GX_CHECK_STATUS(status_code)
 
-    // 设置缓冲区个数
+    // Set buffer number.
     uint64_t buffer_num = ACQ_BUFFER_NUM;
     status_code = GXSetAcqusitionBufferNumber(device_, buffer_num);
     GX_CHECK_STATUS(status_code)
 
-    // 设置数据流传输大小
+    // Set stream transfer size.
     bool stream_transfer_size = false;
     status_code = GXIsImplemented(device_, GX_DS_INT_STREAM_TRANSFER_SIZE, &stream_transfer_size);
     GX_CHECK_STATUS(status_code)
 
-    // 设置数据包大小
     if (stream_transfer_size) {
         status_code = GXSetInt(device_, GX_DS_INT_STREAM_TRANSFER_SIZE, ACQ_TRANSFER_SIZE);
         if (status_code != GX_STATUS_SUCCESS) {
@@ -142,11 +139,11 @@ DHCamera::ErrorCode DHCamera::OpenCamera(uint32_t device_id) {
         }
     }
 
-    // 白平衡：自动
+    // White balance AUTO.
     status_code = GXSetEnum(device_, GX_ENUM_BALANCE_WHITE_AUTO, GX_BALANCE_WHITE_AUTO_ONCE);
     GX_CHECK_STATUS(status_code)
 
-    // 自此之后，device_ 将不再变为空指针，直至关闭设备
+    // device_ will not be nullptr until camera is closed, so camera_number_ plus 1.
     ++camera_number_;
 
     return SUCCESS;
@@ -157,7 +154,7 @@ DHCamera::ErrorCode DHCamera::CloseCamera() {
         StopAcquisition();
     }
 
-    // 接下来无论如何 device_ 都会变成空指针
+    // device_ must be nullptr next, so minus 1.
     --camera_number_;
 
     GX_STATUS status_code = GXCloseDevice(device_);
@@ -181,15 +178,15 @@ DHCamera::ErrorCode DHCamera::CloseCamera() {
 }
 
 DHCamera::ErrorCode DHCamera::StartAcquisition() {
-    // 分配内存
+    // Allocate memory for cache.
     rgb_8_to_rgb_24_cache_ = new unsigned char[payload_size_ * 3];
     raw_16_to_8_cache_ = new unsigned char[payload_size_];
 
-    // 开启数据流
+    // Open the stream.
     GX_STATUS status_code = GXStreamOn(device_);
     GX_CHECK_STATUS_WITH_STREAM(status_code)
 
-    // 开启采集线程
+    // Create C style thread.
     pthread_create(&thread_id_, nullptr, ThreadProc, this);
 
     return SUCCESS;
@@ -200,9 +197,11 @@ DHCamera::ErrorCode DHCamera::StopAcquisition() {
 
     pthread_join(thread_id_, nullptr);
 
+    // Close the stream.
     GX_STATUS status_code = GXStreamOff(device_);
     GX_CHECK_STATUS_WITH_STREAM(status_code)
 
+    // Release memory for cache.
     if (raw_16_to_8_cache_ != nullptr) {
         delete[] raw_16_to_8_cache_;
         raw_16_to_8_cache_ = nullptr;
