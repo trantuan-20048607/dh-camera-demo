@@ -9,7 +9,10 @@
 #define ACQ_TRANSFER_SIZE       (64 * 1024)     ///< Size of data transfer block
 #define ACQ_TRANSFER_NUMBER_URB 64              ///< Qty. of data transfer block
 
-// 检查各个步骤的返回值，开启数据流后使用
+/*
+ * This macro is used to check if the stream is successfully opened or closed.
+ * !! DO NOT use this macro in other place !!
+ */
 #define GX_CHECK_STATUS_WITH_STREAM(status_code)          \
 if ((status_code) != GX_STATUS_SUCCESS) {                 \
     if (raw_16_to_8_cache_ != nullptr) {                  \
