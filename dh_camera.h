@@ -45,7 +45,6 @@ public:
     }
 
 private:
-
     static void *ThreadProc(void *);
 
     static unsigned int camera_number_;

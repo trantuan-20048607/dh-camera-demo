@@ -261,8 +261,14 @@ void *DHCamera::ThreadProc(void *obj) {
                                   CV_8UC3,
                                   self->raw_8_to_rgb_24_cache_);
             cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-            cv::putText(mat, std::to_string(frame_count), cv::Point(0, 24), cv::FONT_HERSHEY_DUPLEX, 1,
-                        cv::Scalar(0, 255, 0), 1, false);
+            cv::putText(mat,
+                        std::to_string(frame_count),
+                        cv::Point(0, 24),
+                        cv::FONT_HERSHEY_DUPLEX,
+                        1,
+                        cv::Scalar(0, 255, 0),
+                        1,
+                        false);
             cv::imshow("CAM", mat);
         }
 
@@ -287,10 +293,13 @@ bool DHCamera::PixelFormatConvert(PGX_FRAME_BUFFER frame_buffer) {
         case GX_PIXEL_FORMAT_BAYER_GB8:
         case GX_PIXEL_FORMAT_BAYER_BG8: {
             // Convert to the RGB image.
-            dx_status_code = DxRaw8toRGB24((unsigned char *) frame_buffer->pImgBuf, raw_8_to_rgb_24_cache_,
+            dx_status_code = DxRaw8toRGB24((unsigned char *) frame_buffer->pImgBuf,
+                                           raw_8_to_rgb_24_cache_,
                                            frame_buffer->nWidth,
                                            frame_buffer->nHeight,
-                                           RAW2RGB_NEIGHBOUR, DX_PIXEL_COLOR_FILTER(color_filter_), false);
+                                           RAW2RGB_NEIGHBOUR,
+                                           DX_PIXEL_COLOR_FILTER(color_filter_),
+                                           false);
             if (dx_status_code != DX_OK) {
                 std::cout << "DxRaw8toRGB24 Failed, Error Code: " << dx_status_code << std::endl;
                 return false;
@@ -306,17 +315,23 @@ bool DHCamera::PixelFormatConvert(PGX_FRAME_BUFFER frame_buffer) {
         case GX_PIXEL_FORMAT_BAYER_GB12:
         case GX_PIXEL_FORMAT_BAYER_BG12: {
             // Convert to the Raw8 image.
-            dx_status_code = DxRaw16toRaw8((unsigned char *) frame_buffer->pImgBuf, raw_16_to_8_cache_,
+            dx_status_code = DxRaw16toRaw8((unsigned char *) frame_buffer->pImgBuf,
+                                           raw_16_to_8_cache_,
                                            frame_buffer->nWidth,
-                                           frame_buffer->nHeight, DX_BIT_2_9);
+                                           frame_buffer->nHeight,
+                                           DX_BIT_2_9);
             if (dx_status_code != DX_OK) {
                 std::cout << "DxRaw16toRaw8 failed, error code: " << dx_status_code << std::endl;
                 return false;
             }
             // Convert to the RGB24 image.
-            dx_status_code = DxRaw8toRGB24(raw_16_to_8_cache_, raw_8_to_rgb_24_cache_, frame_buffer->nWidth,
+            dx_status_code = DxRaw8toRGB24(raw_16_to_8_cache_,
+                                           raw_8_to_rgb_24_cache_,
+                                           frame_buffer->nWidth,
                                            frame_buffer->nHeight,
-                                           RAW2RGB_NEIGHBOUR, DX_PIXEL_COLOR_FILTER(color_filter_), false);
+                                           RAW2RGB_NEIGHBOUR,
+                                           DX_PIXEL_COLOR_FILTER(color_filter_),
+                                           false);
             if (dx_status_code != DX_OK) {
                 std::cout << "DxRaw16toRGB24 failed, error code: " << dx_status_code << std::endl;
                 return false;
