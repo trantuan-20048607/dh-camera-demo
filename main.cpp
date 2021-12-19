@@ -22,6 +22,7 @@ int main() {
         if (!cam.GetImage(img)) {
             cam.CloseCamera();
             std::cout << "Camera disconnected unexpectedly. Reconnecting." << std::flush;
+
             for (; !cam.OpenCamera();) {
                 if (cv::waitKey(500) == 'q') {
                     std::cout << " Aborted, exit program." << std::endl;
@@ -33,6 +34,7 @@ int main() {
             std::cout << " Success." << std::endl;
             cam.SetFrameRate(60);
             cam.StartStream();
+            continue;
         }
 
         cv::putText(img,
