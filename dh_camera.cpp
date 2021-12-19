@@ -36,7 +36,8 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
     uint32_t device_num = 0;
 
     // Get device list.
-    status_code = GXUpdateDeviceList(&device_num, 1000);
+    status_code = GXUpdateDeviceList(&device_num,
+                                     1000);
     if (status_code != GX_STATUS_SUCCESS) {
         std::cout << GetErrorInfo(status_code) << std::endl;
     }
@@ -47,7 +48,8 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
     }
 
     // Open the device of specified index.
-    status_code = GXOpenDeviceByIndex(device_id, &device_);
+    status_code = GXOpenDeviceByIndex(device_id,
+                                      &device_);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Check if it's factory setting can be read.
@@ -61,7 +63,9 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
 
     // Check if it's mono or color camera.
     bool has_color_filter = false;
-    status_code = GXIsImplemented(device_, GX_ENUM_PIXEL_COLOR_FILTER, &has_color_filter);
+    status_code = GXIsImplemented(device_,
+                                  GX_ENUM_PIXEL_COLOR_FILTER,
+                                  &has_color_filter);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Mono cameras are NOT supported.
@@ -70,34 +74,47 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
         device_ = nullptr;
         return false;
     } else {
-        status_code = GXGetEnum(device_, GX_ENUM_PIXEL_COLOR_FILTER, &color_filter_);
+        status_code = GXGetEnum(device_,
+                                GX_ENUM_PIXEL_COLOR_FILTER,
+                                &color_filter_);
         GX_OPEN_CAMERA_CHECK_STATUS(status_code)
     }
 
     // Get payload size.
-    status_code = GXGetInt(device_, GX_INT_PAYLOAD_SIZE, &payload_size_);
+    status_code = GXGetInt(device_,
+                           GX_INT_PAYLOAD_SIZE,
+                           &payload_size_);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Set acquisition mode to continuous.
-    status_code = GXSetEnum(device_, GX_ENUM_ACQUISITION_MODE, GX_ACQ_MODE_CONTINUOUS);
+    status_code = GXSetEnum(device_,
+                            GX_ENUM_ACQUISITION_MODE,
+                            GX_ACQ_MODE_CONTINUOUS);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Turn off the trigger.
-    status_code = GXSetEnum(device_, GX_ENUM_TRIGGER_MODE, GX_TRIGGER_MODE_OFF);
+    status_code = GXSetEnum(device_,
+                            GX_ENUM_TRIGGER_MODE,
+                            GX_TRIGGER_MODE_OFF);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Set buffer number.
     uint64_t buffer_num = ACQ_BUFFER_NUM;
-    status_code = GXSetAcqusitionBufferNumber(device_, buffer_num);
+    status_code = GXSetAcqusitionBufferNumber(device_,
+                                              buffer_num);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Set stream transfer size.
     bool stream_transfer_size = false;
-    status_code = GXIsImplemented(device_, GX_DS_INT_STREAM_TRANSFER_SIZE, &stream_transfer_size);
+    status_code = GXIsImplemented(device_,
+                                  GX_DS_INT_STREAM_TRANSFER_SIZE,
+                                  &stream_transfer_size);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     if (stream_transfer_size) {
-        status_code = GXSetInt(device_, GX_DS_INT_STREAM_TRANSFER_SIZE, ACQ_TRANSFER_SIZE);
+        status_code = GXSetInt(device_,
+                               GX_DS_INT_STREAM_TRANSFER_SIZE,
+                               ACQ_TRANSFER_SIZE);
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
             device_ = nullptr;
@@ -106,11 +123,15 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
     }
 
     bool stream_transfer_number_urb = false;
-    status_code = GXIsImplemented(device_, GX_DS_INT_STREAM_TRANSFER_NUMBER_URB, &stream_transfer_number_urb);
+    status_code = GXIsImplemented(device_,
+                                  GX_DS_INT_STREAM_TRANSFER_NUMBER_URB,
+                                  &stream_transfer_number_urb);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     if (stream_transfer_number_urb) {
-        status_code = GXSetInt(device_, GX_DS_INT_STREAM_TRANSFER_NUMBER_URB, ACQ_TRANSFER_NUMBER_URB);
+        status_code = GXSetInt(device_,
+                               GX_DS_INT_STREAM_TRANSFER_NUMBER_URB,
+                               ACQ_TRANSFER_NUMBER_URB);
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
             device_ = nullptr;
@@ -119,7 +140,9 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
     }
 
     // White balance AUTO.
-    status_code = GXSetEnum(device_, GX_ENUM_BALANCE_WHITE_AUTO, GX_BALANCE_WHITE_AUTO_ONCE);
+    status_code = GXSetEnum(device_,
+                            GX_ENUM_BALANCE_WHITE_AUTO,
+                            GX_BALANCE_WHITE_AUTO_ONCE);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // device_ will not be nullptr until camera is closed, so camera_number_ plus 1.
@@ -208,7 +231,9 @@ void *DHCamera::ThreadProc(void *obj) {
     time(&start_time);
 
     while (self->thread_alive_) {
-        status_code = GXDQBuf(self->device_, &self->frame_buffer_, 1000);
+        status_code = GXDQBuf(self->device_,
+                              &self->frame_buffer_,
+                              1000);
         if (status_code != GX_STATUS_SUCCESS) {
             if (status_code == GX_STATUS_TIMEOUT) {
                 continue;
@@ -218,7 +243,8 @@ void *DHCamera::ThreadProc(void *obj) {
             }
         }
 
-        status_code = GXQBuf(self->device_, self->frame_buffer_);
+        status_code = GXQBuf(self->device_,
+                             self->frame_buffer_);
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
             break;
@@ -421,25 +447,4 @@ std::string DHCamera::GetDeviceVersion() {
     }
 
     return device_version;
-}
-
-std::string DHCamera::GetErrorInfo(GX_STATUS error_status_code) {
-    size_t str_size = 0;
-
-    if (GXGetLastError(&error_status_code,
-                       nullptr,
-                       &str_size) != GX_STATUS_SUCCESS) {
-        return "{?}{Unknown error}";
-    }
-
-    char *error_info = new char[str_size];
-
-    if (GXGetLastError(&error_status_code,
-                       error_info,
-                       &str_size) != GX_STATUS_SUCCESS) {
-        delete[] error_info;
-        return "{?}{Unknown error}";
-    }
-
-    return error_info;
 }
