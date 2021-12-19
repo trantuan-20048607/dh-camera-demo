@@ -5,6 +5,7 @@
 
 int main() {
     DHCamera cam = DHCamera();
+    cv::namedWindow("CAM", cv::WINDOW_AUTOSIZE);
     std::cout << "Waiting for camera." << std::flush;
     while (!cam.OpenCamera()) {
         if (cv::waitKey(500) == 'q') {
