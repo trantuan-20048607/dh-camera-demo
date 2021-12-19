@@ -12,24 +12,6 @@
 #define ACQ_TRANSFER_SIZE       (64 * 1024)     ///< Size of data transfer block
 #define ACQ_TRANSFER_NUMBER_URB 64              ///< Qty. of data transfer block
 
-/*
- * This macro is used to check if the stream is successfully opened or closed.
- * !! DO NOT use this macro in other place !!
- */
-#define GX_CHECK_STATUS_WITH_STREAM(status_code)          \
-if ((status_code) != GX_STATUS_SUCCESS) {                 \
-    if (raw_16_to_8_cache_ != nullptr) {                  \
-        delete[] raw_16_to_8_cache_;                      \
-        raw_16_to_8_cache_ = nullptr;                     \
-    }                                                     \
-    if (raw_8_to_rgb_24_cache_ != nullptr) {              \
-        delete[] raw_8_to_rgb_24_cache_;                  \
-        raw_8_to_rgb_24_cache_ = nullptr;                 \
-    }                                                     \
-    std::cout << GetErrorInfo(status_code) << std::endl;  \
-    return ERR_CAMERA_INTERNAL_ERROR;                     \
-}
-
 // Number of objects with its device_ not nullptr.
 unsigned int DHCamera::camera_number_ = 0;
 
@@ -49,16 +31,7 @@ DHCamera::~DHCamera() {
     }
 }
 
-DHCamera::ErrorCode DHCamera::OpenCamera(uint32_t device_id) {
-
-// This macro is used to check the return code of each step, and should NOT appear outside this function.
-#define GX_CHECK_STATUS(status_code)                      \
-    if ((status_code) != GX_STATUS_SUCCESS) {             \
-    std::cout << GetErrorInfo(status_code) << std::endl;  \
-    device_ = nullptr;                                    \
-    return ERR_CAMERA_INTERNAL_ERROR;                     \
-}
-
+bool DHCamera::OpenCamera(uint32_t device_id) {
     GX_STATUS status_code;
     uint32_t device_num = 0;
 
@@ -70,12 +43,12 @@ DHCamera::ErrorCode DHCamera::OpenCamera(uint32_t device_id) {
 
     // Find at least 1 device.
     if (device_num <= 0) {
-        return ERR_DEVICE_NOT_FOUND;
+        return false;
     }
 
     // Open the device of specified index.
     status_code = GXOpenDeviceByIndex(device_id, &device_);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Check if it's factory setting can be read.
     if (GetVendorName().empty() ||
@@ -83,79 +56,79 @@ DHCamera::ErrorCode DHCamera::OpenCamera(uint32_t device_id) {
         GetSerialNumber().empty() ||
         GetDeviceVersion().empty()) {
         device_ = nullptr;
-        return ERR_CAMERA_INTERNAL_ERROR;
+        return false;
     }
 
     // Check if it's mono or color camera.
     bool has_color_filter = false;
     status_code = GXIsImplemented(device_, GX_ENUM_PIXEL_COLOR_FILTER, &has_color_filter);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Mono cameras are NOT supported.
     if (!has_color_filter) {
         std::cout << "{!}{Mono cameras are NOT supported}";
         device_ = nullptr;
-        return ERR_UNSUPPORTED_CAMERA;
+        return false;
     } else {
         status_code = GXGetEnum(device_, GX_ENUM_PIXEL_COLOR_FILTER, &color_filter_);
-        GX_CHECK_STATUS(status_code)
+        GX_OPEN_CAMERA_CHECK_STATUS(status_code)
     }
 
     // Get payload size.
     status_code = GXGetInt(device_, GX_INT_PAYLOAD_SIZE, &payload_size_);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Set acquisition mode to continuous.
     status_code = GXSetEnum(device_, GX_ENUM_ACQUISITION_MODE, GX_ACQ_MODE_CONTINUOUS);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Turn off the trigger.
     status_code = GXSetEnum(device_, GX_ENUM_TRIGGER_MODE, GX_TRIGGER_MODE_OFF);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Set buffer number.
     uint64_t buffer_num = ACQ_BUFFER_NUM;
     status_code = GXSetAcqusitionBufferNumber(device_, buffer_num);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Set stream transfer size.
     bool stream_transfer_size = false;
     status_code = GXIsImplemented(device_, GX_DS_INT_STREAM_TRANSFER_SIZE, &stream_transfer_size);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     if (stream_transfer_size) {
         status_code = GXSetInt(device_, GX_DS_INT_STREAM_TRANSFER_SIZE, ACQ_TRANSFER_SIZE);
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
             device_ = nullptr;
-            return ERR_CAMERA_INTERNAL_ERROR;
+            return false;
         }
     }
 
     bool stream_transfer_number_urb = false;
     status_code = GXIsImplemented(device_, GX_DS_INT_STREAM_TRANSFER_NUMBER_URB, &stream_transfer_number_urb);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     if (stream_transfer_number_urb) {
         status_code = GXSetInt(device_, GX_DS_INT_STREAM_TRANSFER_NUMBER_URB, ACQ_TRANSFER_NUMBER_URB);
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
             device_ = nullptr;
-            return ERR_CAMERA_INTERNAL_ERROR;
+            return false;
         }
     }
 
     // White balance AUTO.
     status_code = GXSetEnum(device_, GX_ENUM_BALANCE_WHITE_AUTO, GX_BALANCE_WHITE_AUTO_ONCE);
-    GX_CHECK_STATUS(status_code)
+    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // device_ will not be nullptr until camera is closed, so camera_number_ plus 1.
     ++camera_number_;
 
-    return SUCCESS;
+    return true;
 }
 
-DHCamera::ErrorCode DHCamera::CloseCamera() {
+bool DHCamera::CloseCamera() {
     if (thread_alive_) {
         StopAcquisition();
     }
@@ -167,7 +140,7 @@ DHCamera::ErrorCode DHCamera::CloseCamera() {
     if (status_code != GX_STATUS_SUCCESS) {
         std::cout << GetErrorInfo(status_code) << std::endl;
         device_ = nullptr;
-        return ERR_CAMERA_INTERNAL_ERROR;
+        return false;
     }
 
     device_ = nullptr;
@@ -176,36 +149,36 @@ DHCamera::ErrorCode DHCamera::CloseCamera() {
         status_code = GXCloseLib();
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
-            return ERR_CAMERA_INTERNAL_ERROR;
+            return false;
         }
     }
 
-    return SUCCESS;
+    return true;
 }
 
-DHCamera::ErrorCode DHCamera::StartAcquisition() {
+bool DHCamera::StartAcquisition() {
     // Allocate memory for cache.
     raw_8_to_rgb_24_cache_ = new unsigned char[payload_size_ * 3];
     raw_16_to_8_cache_ = new unsigned char[payload_size_];
 
     // Open the stream.
     GX_STATUS status_code = GXStreamOn(device_);
-    GX_CHECK_STATUS_WITH_STREAM(status_code)
+    GX_START_STOP_ACQUISITION_CHECK_STATUS(status_code)
 
     // Create C style thread.
     pthread_create(&thread_id_, nullptr, ThreadProc, this);
 
-    return SUCCESS;
+    return true;
 }
 
-DHCamera::ErrorCode DHCamera::StopAcquisition() {
+bool DHCamera::StopAcquisition() {
     thread_alive_ = false;
 
     pthread_join(thread_id_, nullptr);
 
     // Close the stream.
     GX_STATUS status_code = GXStreamOff(device_);
-    GX_CHECK_STATUS_WITH_STREAM(status_code)
+    GX_START_STOP_ACQUISITION_CHECK_STATUS(status_code)
 
     // Release memory for cache.
     if (raw_16_to_8_cache_ != nullptr) {
@@ -217,7 +190,7 @@ DHCamera::ErrorCode DHCamera::StopAcquisition() {
         raw_8_to_rgb_24_cache_ = nullptr;
     }
 
-    return SUCCESS;
+    return true;
 }
 
 void *DHCamera::ThreadProc(void *obj) {
