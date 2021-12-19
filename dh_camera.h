@@ -257,7 +257,7 @@ private:
 
     static unsigned int camera_number_;
 
-    bool PixelFormatConvert(PGX_FRAME_BUFFER);
+    bool Raw8Raw16ToRGB24(PGX_FRAME_BUFFER);
 
     GX_DEV_HANDLE device_ = nullptr;
     int64_t color_filter_ = GX_COLOR_FILTER_NONE;

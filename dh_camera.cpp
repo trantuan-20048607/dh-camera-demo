@@ -228,7 +228,7 @@ void *DHCamera::ThreadProc(void *obj) {
             std::cout << GetErrorInfo(self->frame_buffer_->nStatus) << std::endl;
         } else {
             frame_count++;
-            self->PixelFormatConvert(self->frame_buffer_);
+            self->Raw8Raw16ToRGB24(self->frame_buffer_);
             cv::Mat mat = cv::Mat(self->frame_buffer_->nHeight,
                                   self->frame_buffer_->nWidth,
                                   CV_8UC3,
@@ -256,7 +256,7 @@ void *DHCamera::ThreadProc(void *obj) {
     return nullptr;
 }
 
-bool DHCamera::PixelFormatConvert(PGX_FRAME_BUFFER frame_buffer) {
+bool DHCamera::Raw8Raw16ToRGB24(PGX_FRAME_BUFFER frame_buffer) {
     VxInt32 dx_status_code;
 
     // Convert RAW8 or RAW16 image to RGB24 image.
