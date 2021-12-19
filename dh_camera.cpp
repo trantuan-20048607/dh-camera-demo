@@ -5,12 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-
-#define ACQ_BUFFER_NUM          5             // Acquisition Buffer Qty.
-#define ACQ_TRANSFER_SIZE       (64 * 1024)   // Size of data transfer block
-#define ACQ_TRANSFER_NUMBER_URB 64            // Qty. of data transfer block
 
 // Number of objects with its device_ not nullptr.
 unsigned int DHCamera::camera_number_ = 0;
@@ -97,7 +92,7 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // Set buffer number.
-    uint64_t buffer_num = ACQ_BUFFER_NUM;
+    uint64_t buffer_num = GX_ACQ_BUFFER_NUM;
     status_code = GXSetAcqusitionBufferNumber(device_,
                                               buffer_num);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
@@ -112,7 +107,7 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
     if (stream_transfer_size) {
         status_code = GXSetInt(device_,
                                GX_DS_INT_STREAM_TRANSFER_SIZE,
-                               ACQ_TRANSFER_SIZE);
+                               GX_ACQ_TRANSFER_SIZE);
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
             device_ = nullptr;
@@ -129,7 +124,7 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
     if (stream_transfer_number_urb) {
         status_code = GXSetInt(device_,
                                GX_DS_INT_STREAM_TRANSFER_NUMBER_URB,
-                               ACQ_TRANSFER_NUMBER_URB);
+                               GX_ACQ_TRANSFER_NUMBER_URB);
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
             device_ = nullptr;
@@ -140,7 +135,7 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
     // White balance AUTO.
     status_code = GXSetEnum(device_,
                             GX_ENUM_BALANCE_WHITE_AUTO,
-                            GX_BALANCE_WHITE_AUTO_ONCE);
+                            GX_BALANCE_WHITE_AUTO_CONTINUOUS);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // device_ will not be nullptr until camera is closed, so camera_number_ plus 1.

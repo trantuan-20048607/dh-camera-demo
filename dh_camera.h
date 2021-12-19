@@ -9,6 +9,10 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+#define GX_ACQ_BUFFER_NUM           5             // Acquisition Buffer Qty.
+#define GX_ACQ_TRANSFER_SIZE        (64 * 1024)   // Size of data transfer block
+#define GX_ACQ_TRANSFER_NUMBER_URB  64            // Qty. of data transfer block
+
 /*
  * This macro is used to check if the device is successfully initialized.
  * !! DO NOT use this macro in other place !!
