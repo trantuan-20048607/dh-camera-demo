@@ -5,6 +5,9 @@
 #include <iostream>
 #include "GxIAPI.h"
 #include "DxImageProc.h"
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 /*
  * This macro is used to check if the device is successfully initialized.
@@ -57,9 +60,11 @@ public:
 
     bool OpenCamera(uint32_t device_id = 1);
 
-    bool StartAcquisition();
+    bool StartStream();
 
-    bool StopAcquisition();
+    bool GetImage(cv::Mat &);
+
+    bool StopStream();
 
     bool CloseCamera();
 
@@ -306,8 +311,6 @@ private:
         return error_info;
     }
 
-    static void *ThreadProc(void *);
-
     static unsigned int camera_number_;
 
     bool Raw8Raw16ToRGB24(PGX_FRAME_BUFFER);
@@ -316,8 +319,7 @@ private:
     int64_t color_filter_ = GX_COLOR_FILTER_NONE;
     int64_t payload_size_ = 0;
 
-    bool thread_alive_ = false;
-    pthread_t thread_id_ = 0;
+    bool stream_running_ = false;
     PGX_FRAME_BUFFER frame_buffer_ = nullptr;
 
     unsigned char *raw_8_to_rgb_24_cache_ = nullptr;

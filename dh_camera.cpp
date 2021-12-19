@@ -23,8 +23,8 @@ DHCamera::DHCamera() {
 }
 
 DHCamera::~DHCamera() {
-    if (thread_alive_) {
-        StopAcquisition();
+    if (stream_running_) {
+        StopStream();
     }
     if (device_ != nullptr) {
         CloseCamera();
@@ -152,8 +152,8 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
 }
 
 bool DHCamera::CloseCamera() {
-    if (thread_alive_) {
-        StopAcquisition();
+    if (stream_running_) {
+        StopStream();
     }
 
     // device_ must be nullptr next, so minus 1.
@@ -179,7 +179,7 @@ bool DHCamera::CloseCamera() {
     return true;
 }
 
-bool DHCamera::StartAcquisition() {
+bool DHCamera::StartStream() {
     // Allocate memory for cache.
     raw_8_to_rgb_24_cache_ = new unsigned char[payload_size_ * 3];
     raw_16_to_8_cache_ = new unsigned char[payload_size_];
@@ -188,16 +188,46 @@ bool DHCamera::StartAcquisition() {
     GX_STATUS status_code = GXStreamOn(device_);
     GX_START_STOP_ACQUISITION_CHECK_STATUS(status_code)
 
-    // Create C style thread.
-    pthread_create(&thread_id_, nullptr, ThreadProc, this);
+    stream_running_ = true;
 
     return true;
 }
 
-bool DHCamera::StopAcquisition() {
-    thread_alive_ = false;
+bool DHCamera::GetImage(cv::Mat &image) {
+    if (!stream_running_)
+        return false;
 
-    pthread_join(thread_id_, nullptr);
+    GX_STATUS status_code;
+
+    status_code = GXDQBuf(device_,
+                          &frame_buffer_,
+                          1000);
+    GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+
+    status_code = GXQBuf(device_,
+                         frame_buffer_);
+    GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+
+    if (frame_buffer_->nStatus != GX_STATUS_SUCCESS) {
+        std::cout << GetErrorInfo(frame_buffer_->nStatus) << std::endl;
+        return false;
+    }
+
+    if (!Raw8Raw16ToRGB24(frame_buffer_))
+        return false;
+
+    image.release();
+    image = cv::Mat(frame_buffer_->nHeight,
+                    frame_buffer_->nWidth,
+                    CV_8UC3,
+                    raw_8_to_rgb_24_cache_);
+    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+
+    return true;
+}
+
+bool DHCamera::StopStream() {
+    stream_running_ = false;
 
     // Close the stream.
     GX_STATUS status_code = GXStreamOff(device_);
@@ -214,72 +244,6 @@ bool DHCamera::StopAcquisition() {
     }
 
     return true;
-}
-
-void *DHCamera::ThreadProc(void *obj) {
-    GX_STATUS status_code;
-
-    auto *self = (DHCamera *) obj;
-
-    self->thread_alive_ = true;
-    self->frame_buffer_ = nullptr;
-
-    time_t start_time;
-    time_t end_time;
-    uint32_t frame_count = 0;
-
-    time(&start_time);
-
-    while (self->thread_alive_) {
-        status_code = GXDQBuf(self->device_,
-                              &self->frame_buffer_,
-                              1000);
-        if (status_code != GX_STATUS_SUCCESS) {
-            if (status_code == GX_STATUS_TIMEOUT) {
-                continue;
-            } else {
-                std::cout << GetErrorInfo(status_code) << std::endl;
-                break;
-            }
-        }
-
-        status_code = GXQBuf(self->device_,
-                             self->frame_buffer_);
-        if (status_code != GX_STATUS_SUCCESS) {
-            std::cout << GetErrorInfo(status_code) << std::endl;
-            break;
-        }
-
-        if (self->frame_buffer_->nStatus != GX_FRAME_STATUS_SUCCESS) {
-            std::cout << GetErrorInfo(self->frame_buffer_->nStatus) << std::endl;
-        } else {
-            frame_count++;
-            self->Raw8Raw16ToRGB24(self->frame_buffer_);
-            cv::Mat mat = cv::Mat(self->frame_buffer_->nHeight,
-                                  self->frame_buffer_->nWidth,
-                                  CV_8UC3,
-                                  self->raw_8_to_rgb_24_cache_);
-            cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-            cv::putText(mat,
-                        std::to_string(frame_count),
-                        cv::Point(0, 24),
-                        cv::FONT_HERSHEY_DUPLEX,
-                        1,
-                        cv::Scalar(0, 255, 0),
-                        1,
-                        false);
-            cv::imshow("CAM", mat);
-        }
-
-        if ((cv::waitKey(5) & 0xff) == 'q') {
-            self->StopAcquisition();
-        }
-    }
-
-    time(&end_time);
-
-    cv::destroyAllWindows();
-    return nullptr;
 }
 
 bool DHCamera::Raw8Raw16ToRGB24(PGX_FRAME_BUFFER frame_buffer) {
