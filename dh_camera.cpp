@@ -8,9 +8,9 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#define ACQ_BUFFER_NUM          5               ///< Acquisition Buffer Qty.
-#define ACQ_TRANSFER_SIZE       (64 * 1024)     ///< Size of data transfer block
-#define ACQ_TRANSFER_NUMBER_URB 64              ///< Qty. of data transfer block
+#define ACQ_BUFFER_NUM          5             // Acquisition Buffer Qty.
+#define ACQ_TRANSFER_SIZE       (64 * 1024)   // Size of data transfer block
+#define ACQ_TRANSFER_NUMBER_URB 64            // Qty. of data transfer block
 
 // Number of objects with its device_ not nullptr.
 unsigned int DHCamera::camera_number_ = 0;
