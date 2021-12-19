@@ -15,13 +15,6 @@
 // Number of objects with its device_ not nullptr.
 unsigned int DHCamera::camera_number_ = 0;
 
-DHCamera::DHCamera() {
-    // Load external dynamic libraries.
-    if (GXInitLib() != GX_STATUS_SUCCESS) {
-        throw std::runtime_error("GX libraries not found.");
-    }
-}
-
 DHCamera::~DHCamera() {
     if (stream_running_) {
         StopStream();
@@ -34,6 +27,11 @@ DHCamera::~DHCamera() {
 bool DHCamera::OpenCamera(uint32_t device_id) {
     GX_STATUS status_code;
     uint32_t device_num = 0;
+
+    if (!camera_number_)
+        // Load external dynamic libraries.
+        if (GXInitLib() != GX_STATUS_SUCCESS)
+            throw std::runtime_error("GX libraries not found.");
 
     // Get device list.
     status_code = GXUpdateDeviceList(&device_num,

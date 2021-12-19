@@ -13,11 +13,16 @@
  * This macro is used to check if the device is successfully initialized.
  * !! DO NOT use this macro in other place !!
  */
-#define GX_OPEN_CAMERA_CHECK_STATUS(status_code)          \
-    if ((status_code) != GX_STATUS_SUCCESS) {             \
-    std::cout << GetErrorInfo(status_code) << std::endl;  \
-    device_ = nullptr;                                    \
-    return false;                                         \
+#define GX_OPEN_CAMERA_CHECK_STATUS(status_code)                      \
+    if ((status_code) != GX_STATUS_SUCCESS) {                         \
+        std::cout << GetErrorInfo(status_code) << std::endl;          \
+        device_ = nullptr;                                            \
+        if (!camera_number_) {                                        \
+            status_code = GXCloseLib();                               \
+            if (status_code != GX_STATUS_SUCCESS)                     \
+                std::cout << GetErrorInfo(status_code) << std::endl;  \
+        }                                                             \
+    return false;                                                     \
 }
 
 /*
@@ -50,11 +55,9 @@ if ((status_code) != GX_STATUS_SUCCESS) {                    \
 
 class DHCamera {
 public:
-    DHCamera();
+    DHCamera() = default;
 
     DHCamera(const DHCamera &) = delete;
-
-    DHCamera(const DHCamera &&) = delete;
 
     ~DHCamera();
 
