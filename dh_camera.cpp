@@ -4,52 +4,57 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
+#include <unistd.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-// Number of objects with its device_ not nullptr.
-unsigned int DHCamera::camera_number_ = 0;
+unsigned int DHCamera::camera_count_ = 0;
 
-DHCamera::~DHCamera() {
-    if (stream_running_) {
-        StopStream();
-    }
-    if (device_ != nullptr) {
-        CloseCamera();
-    }
-}
+bool DHCamera::OpenCamera(const std::string &serial_number) {
+    // Will NOT check stream status for restart.
+    // if (stream_running_) return false;
+    if (device_ != nullptr) return false;
 
-bool DHCamera::OpenCamera(uint32_t device_id) {
-    GX_STATUS status_code;
-    uint32_t device_num = 0;
-
-    if (!camera_number_)
-        // Load external dynamic libraries.
+    // Load external dynamic libraries when no cameras were already opened.
+    if (!camera_count_)
         if (GXInitLib() != GX_STATUS_SUCCESS)
             throw std::runtime_error("GX libraries not found.");
 
-    // Get device list.
-    status_code = GXUpdateDeviceList(&device_num,
-                                     1000);
+    GX_STATUS status_code;
+    GX_OPEN_PARAM open_param;
+
+    // Create an opening parameter structure.
+    std::unique_ptr<char[]> sn(new char[1 + serial_number.size()]);
+    strcpy(sn.get(), serial_number.c_str());
+
+    open_param.accessMode = GX_ACCESS_EXCLUSIVE;
+    open_param.openMode = GX_OPEN_SN;
+    open_param.pszContent = sn.get();
+
+    // Try to open device.
+    status_code = GXOpenDevice(&open_param, &device_);
     if (status_code != GX_STATUS_SUCCESS) {
         std::cout << GetErrorInfo(status_code) << std::endl;
-    }
-
-    // Find at least 1 device.
-    if (device_num <= 0) {
+        device_ = nullptr;
+        if (!camera_count_) {
+            status_code = GXCloseLib();
+            if (status_code != GX_STATUS_SUCCESS)
+                std::cout << GetErrorInfo(status_code) << std::endl;
+        }
         return false;
     }
 
-    // Open the device of specified index.
-    status_code = GXOpenDeviceByIndex(device_id,
-                                      &device_);
-    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
+    serial_number_ = serial_number;
 
     // Check if it's factory setting can be read.
     if (GetVendorName().empty() ||
         GetModelName().empty() ||
-        GetSerialNumber().empty() ||
+        serial_number_.empty() ||
         GetDeviceVersion().empty()) {
+        status_code = GXCloseDevice(device_);
+        if (status_code != GX_STATUS_SUCCESS)
+            std::cout << GetErrorInfo(status_code) << std::endl;
         device_ = nullptr;
         return false;
     }
@@ -108,11 +113,7 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
         status_code = GXSetInt(device_,
                                GX_DS_INT_STREAM_TRANSFER_SIZE,
                                GX_ACQ_TRANSFER_SIZE);
-        if (status_code != GX_STATUS_SUCCESS) {
-            std::cout << GetErrorInfo(status_code) << std::endl;
-            device_ = nullptr;
-            return false;
-        }
+        GX_OPEN_CAMERA_CHECK_STATUS(status_code)
     }
 
     bool stream_transfer_number_urb = false;
@@ -125,11 +126,7 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
         status_code = GXSetInt(device_,
                                GX_DS_INT_STREAM_TRANSFER_NUMBER_URB,
                                GX_ACQ_TRANSFER_NUMBER_URB);
-        if (status_code != GX_STATUS_SUCCESS) {
-            std::cout << GetErrorInfo(status_code) << std::endl;
-            device_ = nullptr;
-            return false;
-        }
+        GX_OPEN_CAMERA_CHECK_STATUS(status_code)
     }
 
     // White balance AUTO.
@@ -138,30 +135,48 @@ bool DHCamera::OpenCamera(uint32_t device_id) {
                             GX_BALANCE_WHITE_AUTO_CONTINUOUS);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
-    // device_ will not be nullptr until camera is closed, so camera_number_ plus 1.
-    ++camera_number_;
+    // device_ will not be nullptr until camera is closed, so camera_count_ plus 1.
+    ++camera_count_;
+
+    // Register callbacks.
+    RegisterCaptureCallback(&DefaultCaptureCallback);
+
+    // Start guard thread.
+    pthread_create(&daemon_thread_id, nullptr, DaemonThreadFunction, this);
 
     return true;
 }
 
 bool DHCamera::CloseCamera() {
-    if (stream_running_) {
-        StopStream();
-    }
+    if (stream_running_) return false;
+    if (device_ == nullptr) return false;
 
     // device_ must be nullptr next, so minus 1.
-    --camera_number_;
+    --camera_count_;
 
+    // Close device.
     GX_STATUS status_code = GXCloseDevice(device_);
     if (status_code != GX_STATUS_SUCCESS) {
         std::cout << GetErrorInfo(status_code) << std::endl;
+
         device_ = nullptr;
+
+        if (!camera_count_) {
+            status_code = GXCloseLib();
+            if (status_code != GX_STATUS_SUCCESS)
+                std::cout << GetErrorInfo(status_code) << std::endl;
+        }
+
         return false;
     }
 
     device_ = nullptr;
 
-    if (!camera_number_) {
+    // Stop guard thread.
+    pthread_join(daemon_thread_id, nullptr);
+
+    // Close libraries.
+    if (!camera_count_) {
         status_code = GXCloseLib();
         if (status_code != GX_STATUS_SUCCESS) {
             std::cout << GetErrorInfo(status_code) << std::endl;
@@ -173,6 +188,9 @@ bool DHCamera::CloseCamera() {
 }
 
 bool DHCamera::StartStream() {
+    if (device_ == nullptr) return false;
+    if (stream_running_) return false;
+
     // Allocate memory for cache.
     raw_8_to_rgb_24_cache_ = new unsigned char[payload_size_ * 3];
     raw_16_to_8_cache_ = new unsigned char[payload_size_];
@@ -186,40 +204,10 @@ bool DHCamera::StartStream() {
     return true;
 }
 
-bool DHCamera::GetImage(cv::Mat &image) {
-    if (!stream_running_)
-        return false;
-
-    GX_STATUS status_code;
-
-    status_code = GXDQBuf(device_,
-                          &frame_buffer_,
-                          1000);
-    GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
-
-    status_code = GXQBuf(device_,
-                         frame_buffer_);
-    GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
-
-    if (frame_buffer_->nStatus != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(frame_buffer_->nStatus) << std::endl;
-        return false;
-    }
-
-    if (!Raw8Raw16ToRGB24(frame_buffer_))
-        return false;
-
-    image.release();
-    image = cv::Mat(frame_buffer_->nHeight,
-                    frame_buffer_->nWidth,
-                    CV_8UC3,
-                    raw_8_to_rgb_24_cache_);
-    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
-
-    return true;
-}
-
 bool DHCamera::StopStream() {
+    if (device_ == nullptr) return false;
+    if (!stream_running_) return false;
+
     stream_running_ = false;
 
     // Close the stream.
@@ -239,7 +227,66 @@ bool DHCamera::StopStream() {
     return true;
 }
 
-bool DHCamera::Raw8Raw16ToRGB24(PGX_FRAME_BUFFER frame_buffer) {
+bool DHCamera::IsConnected() {
+    if (device_ == nullptr) return false;
+
+    GX_STATUS status_code;
+    uint32_t device_num;
+
+    // List all devices.
+    status_code = GXUpdateDeviceList(&device_num, 1000);
+    if (status_code != GX_STATUS_SUCCESS || device_num <= 0) {
+        std::cout << GetErrorInfo(status_code) << std::endl;
+        return false;
+    }
+
+    // List all serial numbers.
+    std::unique_ptr<GX_DEVICE_BASE_INFO[]> device_list(new GX_DEVICE_BASE_INFO[device_num]);
+    size_t act_size = device_num * sizeof(GX_DEVICE_BASE_INFO);
+    status_code = GXGetAllDeviceBaseInfo(device_list.get(), &act_size);
+    if (status_code != GX_STATUS_SUCCESS) {
+        std::cout << GetErrorInfo(status_code) << std::endl;
+        return false;
+    }
+
+    // Find known device.
+    for (uint32_t i = 0; i < device_num; i++) {
+        if (device_list[i].szSN == this->serial_number_)
+            return true;
+    }
+
+    return false;
+}
+
+bool DHCamera::GetImage(cv::Mat &image) {
+    if (!buffer_.Empty())
+        image.release();
+    return buffer_.Pop(image);
+}
+
+void DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *param) {
+    auto *camera = (DHCamera *) param->pUserParam;
+
+    if (param->status != GX_STATUS_SUCCESS) {
+        std::cout << GetErrorInfo(param->status) << std::endl;
+        return;
+    }
+
+    // Convert to RGB format.
+    if (!camera->Raw8Raw16ToRGB24(param))
+        return;
+
+    // Generate OpenCV style image matrix.
+    cv::Mat image = cv::Mat(param->nHeight,
+                            param->nWidth,
+                            CV_8UC3,
+                            camera->raw_8_to_rgb_24_cache_);
+    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+
+    camera->buffer_.Push(image);
+}
+
+bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_buffer) {
     VxInt32 dx_status_code;
 
     // Convert RAW8 or RAW16 image to RGB24 image.
@@ -302,7 +349,84 @@ bool DHCamera::Raw8Raw16ToRGB24(PGX_FRAME_BUFFER frame_buffer) {
     return true;
 }
 
-std::string DHCamera::GetVendorName() {
+void *DHCamera::DaemonThreadFunction(void *p) {
+    auto self = (DHCamera *) p;
+
+    while (self->device_ != nullptr) {
+        sleep(1);
+        if (!self->IsConnected()) {
+            // Print information.
+            std::cout << "Camera " << self->serial_number_ <<
+                      " disconnected. Reconnecting ..." << std::endl;
+
+            // Stop the stream, errors are blocked.
+            if (self->stream_running_) {
+                GXStreamOff(self->device_);
+                if (self->raw_16_to_8_cache_ != nullptr) {
+                    delete[] self->raw_16_to_8_cache_;
+                    self->raw_16_to_8_cache_ = nullptr;
+                }
+                if (self->raw_8_to_rgb_24_cache_ != nullptr) {
+                    delete[] self->raw_8_to_rgb_24_cache_;
+                    self->raw_8_to_rgb_24_cache_ = nullptr;
+                }
+            }
+
+            // Unregister any callbacks.
+            self->UnregisterCaptureCallback();
+
+            // Close camera, errors are blocked.
+            --camera_count_;
+            GXCloseDevice(self->device_);
+
+            // Clear caches except serial number.
+            self->device_ = nullptr;
+            self->payload_size_ = 0;
+            self->color_filter_ = GX_COLOR_FILTER_NONE;
+            self->daemon_thread_id = 0;
+
+            // Clean libraries' cache
+            if (!camera_count_)
+                GXCloseLib();
+
+            // Try reopening camera, errors will be shown.
+            while (!self->OpenCamera(self->serial_number_)) {
+                sleep(1);
+            }
+
+            // Reset parameters.
+            self->SetFrameRate(self->frame_rate_);
+            // TODO Add more parameters.
+
+            // Restart Stream
+            if (self->stream_running_) {
+                self->raw_8_to_rgb_24_cache_ = new unsigned char[self->payload_size_ * 3];
+                self->raw_16_to_8_cache_ = new unsigned char[self->payload_size_];
+
+                GX_STATUS status_code = GXStreamOn(self->device_);
+                if (status_code != GX_STATUS_SUCCESS) {
+                    std::cout << GetErrorInfo(status_code) << std::endl;
+                    GXStreamOff(self->device_);
+                    if (self->raw_16_to_8_cache_ != nullptr) {
+                        delete[] self->raw_16_to_8_cache_;
+                        self->raw_16_to_8_cache_ = nullptr;
+                    }
+                    if (self->raw_8_to_rgb_24_cache_ != nullptr) {
+                        delete[] self->raw_8_to_rgb_24_cache_;
+                        self->raw_8_to_rgb_24_cache_ = nullptr;
+                    }
+                    self->stream_running_ = false;
+                }
+            }
+
+            std::cout << "Reconnect to " << self->serial_number_ << " successfully." << std::endl;
+        }
+    }
+
+    return nullptr;
+}
+
+[[maybe_unused]] std::string DHCamera::GetVendorName() {
     size_t str_size = 0;
 
     GX_STATUS status_code = GXGetStringLength(device_,
@@ -328,7 +452,7 @@ std::string DHCamera::GetVendorName() {
     return vendor_name;
 }
 
-std::string DHCamera::GetModelName() {
+[[maybe_unused]] std::string DHCamera::GetModelName() {
     size_t str_size = 0;
 
     GX_STATUS status_code = GXGetStringLength(device_,
@@ -354,7 +478,7 @@ std::string DHCamera::GetModelName() {
     return model_name;
 }
 
-std::string DHCamera::GetSerialNumber() {
+[[maybe_unused]] std::string DHCamera::GetSerialNumber() {
     size_t str_size = 0;
 
     GX_STATUS status_code = GXGetStringLength(device_,
@@ -380,7 +504,7 @@ std::string DHCamera::GetSerialNumber() {
     return serial_number;
 }
 
-std::string DHCamera::GetDeviceVersion() {
+[[maybe_unused]] std::string DHCamera::GetDeviceVersion() {
     size_t str_size = 0;
 
     GX_STATUS status_code = GXGetStringLength(device_,

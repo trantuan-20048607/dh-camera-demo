@@ -7,10 +7,12 @@
 
 int main() {
     DHCamera cam = DHCamera();
+
     cv::namedWindow("CAM", cv::WINDOW_AUTOSIZE);
-    if (!cam.OpenCamera()) {
+
+    if (!cam.OpenCamera("KE0210010102")) {
         std::cout << "Waiting for camera." << std::flush;
-        while (!cam.OpenCamera()) {
+        while (!cam.OpenCamera("KE0210010102")) {
             if (cv::waitKey(500) == 'q') {
                 std::cout << " Aborted, exit program." << std::endl;
                 return 0;
@@ -21,28 +23,16 @@ int main() {
     } else {
         std::cout << "Camera connected." << std::endl;
     }
+
     cam.SetFrameRate(60);
     cam.StartStream();
     cv::Mat img;
     uint32_t frame_count = 0;
     uint32_t last_second_frame_cont = 0;
     time_t start_time = time(nullptr), end_time;
-    int pressed_key;
-    for (uint32_t fps = 0; pressed_key != 'q'; ++frame_count) {
+    for (uint32_t fps = 0; cv::waitKey(10) != 'q'; ++frame_count) {
         if (!cam.GetImage(img)) {
-            cam.CloseCamera();
-            std::cout << "Camera disconnected unexpectedly. Reconnecting." << std::flush;
-            while (!cam.OpenCamera()) {
-                if (cv::waitKey(500) == 'q') {
-                    std::cout << " Aborted, exit program." << std::endl;
-                    img.release();
-                    return 0;
-                }
-                std::cout << "." << std::flush;
-            }
-            std::cout << " Success." << std::endl;
-            cam.SetFrameRate(60);
-            cam.StartStream();
+            --frame_count;
             continue;
         }
         cv::putText(img,
@@ -54,7 +44,6 @@ int main() {
                     1,
                     false);
         cv::imshow("CAM", img);
-        pressed_key = cv::waitKey(1);
         end_time = time(nullptr);
         if (end_time - start_time == 1) {
             fps = frame_count - last_second_frame_cont;
