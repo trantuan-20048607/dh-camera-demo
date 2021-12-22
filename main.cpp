@@ -1,4 +1,5 @@
 #include "dh_camera.h"
+#include <unistd.h>
 #include <iostream>
 #include <ctime>
 #include <opencv2/core.hpp>
@@ -8,21 +9,12 @@
 int main() {
     DHCamera cam = DHCamera();
 
-    cv::namedWindow("CAM", cv::WINDOW_AUTOSIZE);
+    std::cout << "Waiting for camera ..." << std::endl;
 
-    if (!cam.OpenCamera("KE0210010102")) {
-        std::cout << "Waiting for camera." << std::flush;
-        while (!cam.OpenCamera("KE0210010102")) {
-            if (cv::waitKey(500) == 'q') {
-                std::cout << " Aborted, exit program." << std::endl;
-                return 0;
-            }
-            std::cout << "." << std::flush;
-        }
-        std::cout << " Connected." << std::endl;
-    } else {
-        std::cout << "Camera connected." << std::endl;
-    }
+    while (!cam.OpenCamera("KE0210010102"))
+        sleep(1);
+
+    std::cout << "Camera connected." << std::endl;
 
     cam.SetFrameRate(60);
     cam.StartStream();

@@ -141,8 +141,11 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
     // Register callbacks.
     RegisterCaptureCallback(&DefaultCaptureCallback);
 
-    // Start guard thread.
-    pthread_create(&daemon_thread_id, nullptr, DaemonThreadFunction, this);
+    // Start daemon thread.
+    if (!daemon_thread_id_) {
+        stop_daemon_thread_flag_ = false;
+        pthread_create(&daemon_thread_id_, nullptr, DaemonThreadFunction, this);
+    }
 
     return true;
 }
@@ -150,6 +153,14 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
 bool DHCamera::CloseCamera() {
     if (stream_running_) return false;
     if (device_ == nullptr) return false;
+
+    // Stop daemon thread.
+    stop_daemon_thread_flag_ = true;
+    pthread_join(daemon_thread_id_, nullptr);
+
+    // Reset daemon thread parameters.
+    daemon_thread_id_ = 0;
+    stop_daemon_thread_flag_ = false;
 
     // device_ must be nullptr next, so minus 1.
     --camera_count_;
@@ -172,9 +183,6 @@ bool DHCamera::CloseCamera() {
 
     device_ = nullptr;
 
-    // Stop guard thread.
-    pthread_join(daemon_thread_id, nullptr);
-
     // Close libraries.
     if (!camera_count_) {
         status_code = GXCloseLib();
@@ -184,6 +192,10 @@ bool DHCamera::CloseCamera() {
         }
     }
 
+    // Reset camera parameters.
+    color_filter_ = GX_COLOR_FILTER_NONE;
+    payload_size_ = 0;
+
     return true;
 }
 
@@ -191,13 +203,16 @@ bool DHCamera::StartStream() {
     if (device_ == nullptr) return false;
     if (stream_running_) return false;
 
+    // Save temporary config to cache folder.
+    ExportConfigurationFile("../cache/" + serial_number_ + ".txt");
+
     // Allocate memory for cache.
     raw_8_to_rgb_24_cache_ = new unsigned char[payload_size_ * 3];
     raw_16_to_8_cache_ = new unsigned char[payload_size_];
 
     // Open the stream.
     GX_STATUS status_code = GXStreamOn(device_);
-    GX_START_STOP_ACQUISITION_CHECK_STATUS(status_code)
+    GX_START_STOP_STREAM_CHECK_STATUS(status_code)
 
     stream_running_ = true;
 
@@ -212,7 +227,7 @@ bool DHCamera::StopStream() {
 
     // Close the stream.
     GX_STATUS status_code = GXStreamOff(device_);
-    GX_START_STOP_ACQUISITION_CHECK_STATUS(status_code)
+    GX_START_STOP_STREAM_CHECK_STATUS(status_code)
 
     // Release memory for cache.
     if (raw_16_to_8_cache_ != nullptr) {
@@ -250,10 +265,9 @@ bool DHCamera::IsConnected() {
     }
 
     // Find known device.
-    for (uint32_t i = 0; i < device_num; i++) {
+    for (uint32_t i = 0; i < device_num; i++)
         if (device_list[i].szSN == this->serial_number_)
             return true;
-    }
 
     return false;
 }
@@ -267,6 +281,7 @@ bool DHCamera::GetImage(cv::Mat &image) {
 void DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *param) {
     auto *camera = (DHCamera *) param->pUserParam;
 
+    // Check image status.
     if (param->status != GX_STATUS_SUCCESS) {
         std::cout << GetErrorInfo(param->status) << std::endl;
         return;
@@ -286,20 +301,20 @@ void DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *param) {
     camera->buffer_.Push(image);
 }
 
-bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_buffer) {
+bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_callback) {
     VxInt32 dx_status_code;
 
     // Convert RAW8 or RAW16 image to RGB24 image.
-    switch (frame_buffer->nPixelFormat) {
+    switch (frame_callback->nPixelFormat) {
         case GX_PIXEL_FORMAT_BAYER_GR8:
         case GX_PIXEL_FORMAT_BAYER_RG8:
         case GX_PIXEL_FORMAT_BAYER_GB8:
         case GX_PIXEL_FORMAT_BAYER_BG8: {
             // Convert to the RGB image.
-            dx_status_code = DxRaw8toRGB24((unsigned char *) frame_buffer->pImgBuf,
+            dx_status_code = DxRaw8toRGB24((unsigned char *) frame_callback->pImgBuf,
                                            raw_8_to_rgb_24_cache_,
-                                           frame_buffer->nWidth,
-                                           frame_buffer->nHeight,
+                                           frame_callback->nWidth,
+                                           frame_callback->nHeight,
                                            RAW2RGB_NEIGHBOUR,
                                            DX_PIXEL_COLOR_FILTER(color_filter_),
                                            false);
@@ -318,10 +333,10 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_buffer) {
         case GX_PIXEL_FORMAT_BAYER_GB12:
         case GX_PIXEL_FORMAT_BAYER_BG12: {
             // Convert to the Raw8 image.
-            dx_status_code = DxRaw16toRaw8((unsigned char *) frame_buffer->pImgBuf,
+            dx_status_code = DxRaw16toRaw8((unsigned char *) frame_callback->pImgBuf,
                                            raw_16_to_8_cache_,
-                                           frame_buffer->nWidth,
-                                           frame_buffer->nHeight,
+                                           frame_callback->nWidth,
+                                           frame_callback->nHeight,
                                            DX_BIT_2_9);
             if (dx_status_code != DX_OK) {
                 std::cout << "DxRaw16toRaw8 failed, error code: " << dx_status_code << std::endl;
@@ -330,8 +345,8 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_buffer) {
             // Convert to the RGB24 image.
             dx_status_code = DxRaw8toRGB24(raw_16_to_8_cache_,
                                            raw_8_to_rgb_24_cache_,
-                                           frame_buffer->nWidth,
-                                           frame_buffer->nHeight,
+                                           frame_callback->nWidth,
+                                           frame_callback->nHeight,
                                            RAW2RGB_NEIGHBOUR,
                                            DX_PIXEL_COLOR_FILTER(color_filter_),
                                            false);
@@ -352,7 +367,7 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_buffer) {
 void *DHCamera::DaemonThreadFunction(void *p) {
     auto self = (DHCamera *) p;
 
-    while (self->device_ != nullptr) {
+    while (!self->stop_daemon_thread_flag_) {
         sleep(1);
         if (!self->IsConnected()) {
             // Print information.
@@ -379,26 +394,24 @@ void *DHCamera::DaemonThreadFunction(void *p) {
             --camera_count_;
             GXCloseDevice(self->device_);
 
-            // Clear caches except serial number.
+            // Clear cache except serial number and stream status.
             self->device_ = nullptr;
             self->payload_size_ = 0;
             self->color_filter_ = GX_COLOR_FILTER_NONE;
-            self->daemon_thread_id = 0;
+            self->daemon_thread_id_ = 0;
 
             // Clean libraries' cache
             if (!camera_count_)
                 GXCloseLib();
 
-            // Try reopening camera, errors will be shown.
-            while (!self->OpenCamera(self->serial_number_)) {
+            // Try reopening camera once per second, errors will be shown.
+            while (!self->OpenCamera(self->serial_number_))
                 sleep(1);
-            }
 
             // Reset parameters.
-            self->SetFrameRate(self->frame_rate_);
-            // TODO Add more parameters.
+            self->ImportConfigurationFile("../cache/" + self->serial_number_ + ".txt");
 
-            // Restart Stream
+            // Restart Stream.
             if (self->stream_running_) {
                 self->raw_8_to_rgb_24_cache_ = new unsigned char[self->payload_size_ * 3];
                 self->raw_16_to_8_cache_ = new unsigned char[self->payload_size_];

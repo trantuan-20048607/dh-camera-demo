@@ -35,10 +35,10 @@
 }
 
 /**
- * \brief This macro is used to check if parameters are successfully modified or set.  \n
+ * \brief This macro is used to check if parameters are successfully modified or set.
  * \attention !! DO NOT use this macro in other place !!
  */
-#define GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)    \
+#define GX_CHECK_STATUS(status_code)    \
     if (status_code != GX_STATUS_SUCCESS) {               \
     std::cout << GetErrorInfo(status_code) << std::endl;  \
     return false;                                         \
@@ -48,7 +48,7 @@
  * \brief This macro is used to check if the stream is successfully opened or closed.
  * \attention !! DO NOT use this macro in other place !!
  */
-#define GX_START_STOP_ACQUISITION_CHECK_STATUS(status_code)  \
+#define GX_START_STOP_STREAM_CHECK_STATUS(status_code)  \
 if (status_code != GX_STATUS_SUCCESS) {                      \
     if (raw_16_to_8_cache_ != nullptr) {                     \
         delete[] raw_16_to_8_cache_;                         \
@@ -67,15 +67,19 @@ public:
     DHCamera() : device_(nullptr),
                  color_filter_(GX_COLOR_FILTER_NONE),
                  payload_size_(0),
-                 frame_rate_(0),
                  stream_running_(false),
+                 stop_daemon_thread_flag_(false),
                  raw_8_to_rgb_24_cache_(nullptr),
                  raw_16_to_8_cache_(nullptr),
-                 daemon_thread_id(0) {};
+                 daemon_thread_id_(0) {};
 
     DHCamera(const DHCamera &) = delete;
 
-    DHCamera(const DHCamera &&) = delete;
+    DHCamera(DHCamera &&) = delete;
+
+    DHCamera &operator=(const DHCamera &) = delete;
+
+    DHCamera &operator=(const DHCamera &&) = delete;
 
     ~DHCamera() = default;
 
@@ -124,27 +128,48 @@ public:
     bool GetImage(cv::Mat &);
 
 
+    /**
+     * \brief Export current config to specified file.
+     * \param file_path File path.
+     * \return A boolean shows if config is successfully saved.
+     */
+    [[maybe_unused]] inline bool ExportConfigurationFile(const std::string &file_path) {
+        GX_STATUS status_code = GXExportConfigFile(device_, file_path.c_str());
+        GX_CHECK_STATUS(status_code)
+
+        return true;
+    }
+
+    /**
+     * \brief Import current config to specified file.
+     * \param file_path File path.
+     * \return A boolean shows if config is successfully imported.
+     */
+    [[maybe_unused]] inline bool ImportConfigurationFile(const std::string &file_path) {
+        GX_STATUS status_code = GXImportConfigFile(device_, file_path.c_str());
+        GX_CHECK_STATUS(status_code)
+
+        return true;
+    }
+
     [[maybe_unused]] inline bool SetFrameRate(double fps) {
         GX_STATUS status_code;
         if (fps > 0) {
             status_code = GXSetEnum(device_,
                                     GX_ENUM_ACQUISITION_FRAME_RATE_MODE,
                                     GX_ACQUISITION_FRAME_RATE_MODE_ON);
-            GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+            GX_CHECK_STATUS(status_code)
 
             status_code = GXSetFloat(device_,
                                      GX_FLOAT_ACQUISITION_FRAME_RATE,
                                      fps);
-            GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+            GX_CHECK_STATUS(status_code)
         } else {
             status_code = GXSetEnum(device_,
                                     GX_ENUM_ACQUISITION_FRAME_RATE_MODE,
                                     GX_ACQUISITION_FRAME_RATE_MODE_OFF);
-            GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+            GX_CHECK_STATUS(status_code)
         }
-
-        // For recovery.
-        frame_rate_ = fps;
 
         return true;
     }
@@ -159,7 +184,7 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_ENUM_EXPOSURE_MODE,
                                 gx_exposure_mode_entry);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -174,7 +199,7 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_ENUM_EXPOSURE_AUTO,
                                 gx_exposure_auto_entry);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -188,7 +213,7 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_ENUM_EXPOSURE_TIME_MODE,
                                 gx_exposure_time_mode_entry);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -197,7 +222,7 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_FLOAT_EXPOSURE_TIME,
                                 time);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -212,7 +237,7 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_ENUM_GAIN_AUTO,
                                 gx_gain_auto_entry);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -221,18 +246,18 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_ENUM_GAIN_SELECTOR,
                                 GX_GAIN_SELECTOR_ALL);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
 
         status_code = GXSetFloat(device_,
                                  GX_FLOAT_GAIN,
                                  (float) gain);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
 
         double value = 0;
         status_code = GXGetFloat(device_,
                                  GX_FLOAT_GAIN,
                                  &value);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
 
         return true;
     }
@@ -247,7 +272,7 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_ENUM_GAIN_AUTO,
                                 gx_balance_white_auto_entry);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -261,7 +286,7 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_ENUM_TRIGGER_MODE,
                                 gx_trigger_mode_entry);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -279,7 +304,7 @@ public:
         status_code = GXSetEnum(device_,
                                 GX_ENUM_TRIGGER_SOURCE,
                                 gx_trigger_source_entry);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -289,7 +314,7 @@ public:
         status_code = GXGetInt(device_,
                                GX_INT_PAYLOAD_SIZE,
                                payload_size);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -306,7 +331,7 @@ public:
         status_code = GXGetEnum(device_,
                                 GX_ENUM_PIXEL_COLOR_FILTER,
                                 color_filter);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -315,7 +340,7 @@ public:
         status_code = GXGetEnum(device_,
                                 GX_ENUM_PIXEL_FORMAT,
                                 pixel_format);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -323,7 +348,7 @@ public:
         GX_STATUS status_code;
         status_code = GXSendCommand(device_,
                                     GX_COMMAND_TRIGGER_SOFTWARE);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
@@ -333,14 +358,14 @@ public:
         status_code = GXRegisterCaptureCallback(device_,
                                                 this,
                                                 callback);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
         return true;
     }
 
     [[maybe_unused]] inline bool UnregisterCaptureCallback() {
         GX_STATUS status_code;
         status_code = GXUnregisterCaptureCallback(device_);
-        GX_SET_GET_PARAMETER_CHECK_STATUS(status_code)
+        GX_CHECK_STATUS(status_code)
 
         return true;
     }
@@ -408,14 +433,15 @@ private:
     static unsigned int camera_count_;
 
     GX_DEV_HANDLE device_;
+
     bool stream_running_;
+
+    bool stop_daemon_thread_flag_;
+    pthread_t daemon_thread_id_;
 
     int64_t color_filter_;
     int64_t payload_size_;
-    double frame_rate_;
     std::string serial_number_;
-
-    pthread_t daemon_thread_id;
 
     unsigned char *raw_8_to_rgb_24_cache_;
     unsigned char *raw_16_to_8_cache_;

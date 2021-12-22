@@ -137,3 +137,6 @@ _deps
 .ninja_deps
 .ninja_log
 
+### Cache
+cache
+!cache/.keep
