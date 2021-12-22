@@ -1,13 +1,16 @@
-#include "dh_camera.h"
-#include "GxIAPI.h"
-#include "DxImageProc.h"
 #include <string>
-#include <iostream>
 #include <stdexcept>
 #include <thread>
 #include <unistd.h>
+
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+
+#include "GxIAPI.h"
+#include "DxImageProc.h"
+
+#include "dh_camera.h"
+#include "log/easylogging++.h"
 
 unsigned int DHCamera::camera_count_ = 0;
 
@@ -35,12 +38,12 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
     // Try to open device.
     status_code = GXOpenDevice(&open_param, &device_);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         device_ = nullptr;
         if (!camera_count_) {
             status_code = GXCloseLib();
             if (status_code != GX_STATUS_SUCCESS)
-                std::cout << GetErrorInfo(status_code) << std::endl;
+                LOG(ERROR) << GetErrorInfo(status_code);
         }
         return false;
     }
@@ -54,7 +57,7 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
         GetDeviceVersion().empty()) {
         status_code = GXCloseDevice(device_);
         if (status_code != GX_STATUS_SUCCESS)
-            std::cout << GetErrorInfo(status_code) << std::endl;
+            LOG(ERROR) << GetErrorInfo(status_code);
         device_ = nullptr;
         return false;
     }
@@ -68,7 +71,7 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
 
     // Mono cameras are NOT supported.
     if (!has_color_filter) {
-        std::cout << "{!}{Mono cameras are NOT supported}";
+        LOG(ERROR) << "{!}{Mono cameras are NOT supported}";
         device_ = nullptr;
         return false;
     } else {
@@ -168,14 +171,14 @@ bool DHCamera::CloseCamera() {
     // Close device.
     GX_STATUS status_code = GXCloseDevice(device_);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
 
         device_ = nullptr;
 
         if (!camera_count_) {
             status_code = GXCloseLib();
             if (status_code != GX_STATUS_SUCCESS)
-                std::cout << GetErrorInfo(status_code) << std::endl;
+                LOG(ERROR) << GetErrorInfo(status_code);
         }
 
         return false;
@@ -187,7 +190,7 @@ bool DHCamera::CloseCamera() {
     if (!camera_count_) {
         status_code = GXCloseLib();
         if (status_code != GX_STATUS_SUCCESS) {
-            std::cout << GetErrorInfo(status_code) << std::endl;
+            LOG(ERROR) << GetErrorInfo(status_code);
             return false;
         }
     }
@@ -251,7 +254,7 @@ bool DHCamera::IsConnected() {
     // List all devices.
     status_code = GXUpdateDeviceList(&device_num, 1000);
     if (status_code != GX_STATUS_SUCCESS || device_num <= 0) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         return false;
     }
 
@@ -260,7 +263,7 @@ bool DHCamera::IsConnected() {
     size_t act_size = device_num * sizeof(GX_DEVICE_BASE_INFO);
     status_code = GXGetAllDeviceBaseInfo(device_list.get(), &act_size);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         return false;
     }
 
@@ -283,7 +286,7 @@ void DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *param) {
 
     // Check image status.
     if (param->status != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(param->status) << std::endl;
+        LOG(ERROR) << GetErrorInfo(param->status);
         return;
     }
 
@@ -320,7 +323,7 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_callback) {
                                            DX_PIXEL_COLOR_FILTER(color_filter_),
                                            false);
             if (dx_status_code != DX_OK) {
-                std::cout << "DxRaw8toRGB24 Failed, Error Code: " << dx_status_code << std::endl;
+                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code));
                 return false;
             }
             break;
@@ -340,7 +343,7 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_callback) {
                                            frame_callback->nHeight,
                                            DX_BIT_2_9);
             if (dx_status_code != DX_OK) {
-                std::cout << "DxRaw16toRaw8 failed, error code: " << dx_status_code << std::endl;
+                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code));
                 return false;
             }
             // Convert to the RGB24 image.
@@ -352,13 +355,13 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_callback) {
                                            DX_PIXEL_COLOR_FILTER(color_filter_),
                                            false);
             if (dx_status_code != DX_OK) {
-                std::cout << "DxRaw16toRGB24 failed, error code: " << dx_status_code << std::endl;
+                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code));
                 return false;
             }
             break;
         }
         default: {
-            std::cout << "Error: PixelFormat of this camera is not supported." << std::endl;
+            LOG(ERROR) << "Error: PixelFormat of this camera is not supported.";
             return false;
         }
     }
@@ -372,8 +375,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
         sleep(1);
         if (!self->IsConnected()) {
             // Print information.
-            std::cout << "Camera " << self->serial_number_ <<
-                      " disconnected. Reconnecting ..." << std::endl;
+            LOG(ERROR) << ("Camera " + self->serial_number_ + " disconnected. Reconnecting ...");
 
             // Stop the stream, errors are blocked.
             if (self->stream_running_) {
@@ -419,7 +421,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
 
                 GX_STATUS status_code = GXStreamOn(self->device_);
                 if (status_code != GX_STATUS_SUCCESS) {
-                    std::cout << GetErrorInfo(status_code) << std::endl;
+                    LOG(ERROR) << GetErrorInfo(status_code);
                     GXStreamOff(self->device_);
                     if (self->raw_16_to_8_cache_ != nullptr) {
                         delete[] self->raw_16_to_8_cache_;
@@ -433,7 +435,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                 }
             }
 
-            std::cout << "Reconnect to " << self->serial_number_ << " successfully." << std::endl;
+            LOG(INFO) << ("Reconnect to " + self->serial_number_ + " successfully.");
         }
     }
 
@@ -447,7 +449,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                                               GX_STRING_DEVICE_VENDOR_NAME,
                                               &str_size);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         return "";
     }
 
@@ -458,7 +460,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                               vendor_name,
                               &str_size);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         delete[] vendor_name;
         return "";
     }
@@ -473,7 +475,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                                               GX_STRING_DEVICE_MODEL_NAME,
                                               &str_size);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         return "";
     }
 
@@ -484,7 +486,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                               model_name,
                               &str_size);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         delete[] model_name;
         return "";
     }
@@ -499,7 +501,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                                               GX_STRING_DEVICE_SERIAL_NUMBER,
                                               &str_size);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         return "";
     }
 
@@ -510,7 +512,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                               serial_number,
                               &str_size);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         delete[] serial_number;
         return "";
     }
@@ -525,7 +527,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                                               GX_STRING_DEVICE_VERSION,
                                               &str_size);
     if (status_code != GX_STATUS_SUCCESS) {
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         return "";
     }
 
@@ -537,7 +539,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                               &str_size);
     if (status_code != GX_STATUS_SUCCESS) {
         delete[] device_version;
-        std::cout << GetErrorInfo(status_code) << std::endl;
+        LOG(ERROR) << GetErrorInfo(status_code);
         return "";
     }
 

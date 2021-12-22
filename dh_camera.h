@@ -2,13 +2,15 @@
 #define _DH_CAMERA_H_
 
 #include <string>
-#include <iostream>
-#include "GxIAPI.h"
-#include "DxImageProc.h"
+
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include "GxIAPI.h"
+#include "DxImageProc.h"
+
+#include "log/easylogging++.h"
 #include "buffer.h"
 
 #define GX_ACQ_BUFFER_NUM           5            // Acquisition Buffer Qty.
@@ -19,47 +21,47 @@
  * \brief This macro is used to check if the device is successfully initialized.
  * \attention !! DO NOT use this macro in other place !!
  */
-#define GX_OPEN_CAMERA_CHECK_STATUS(status_code)                      \
-    if (status_code != GX_STATUS_SUCCESS) {                           \
-        std::cout << GetErrorInfo(status_code) << std::endl;          \
-        status_code = GXCloseDevice(device_);                         \
-        if (status_code != GX_STATUS_SUCCESS)                         \
-            std::cout << GetErrorInfo(status_code) << std::endl;      \
-        device_ = nullptr;                                            \
-        if (!camera_count_) {                                         \
-            status_code = GXCloseLib();                               \
-            if (status_code != GX_STATUS_SUCCESS)                     \
-                std::cout << GetErrorInfo(status_code) << std::endl;  \
-        }                                                             \
-    return false;                                                     \
+#define GX_OPEN_CAMERA_CHECK_STATUS(status_code)          \
+    if ((status_code) != GX_STATUS_SUCCESS) {             \
+        LOG(ERROR) << GetErrorInfo(status_code);          \
+        (status_code) = GXCloseDevice(device_);           \
+        if ((status_code) != GX_STATUS_SUCCESS)           \
+            LOG(ERROR) << GetErrorInfo(status_code);      \
+        device_ = nullptr;                                \
+        if (!camera_count_) {                             \
+            (status_code) = GXCloseLib();                 \
+            if ((status_code) != GX_STATUS_SUCCESS)       \
+                LOG(ERROR) << GetErrorInfo(status_code);  \
+        }                                                 \
+    return false;                                         \
 }
 
 /**
  * \brief This macro is used to check if parameters are successfully modified or set.
  * \attention !! DO NOT use this macro in other place !!
  */
-#define GX_CHECK_STATUS(status_code)                      \
-    if (status_code != GX_STATUS_SUCCESS) {               \
-    std::cout << GetErrorInfo(status_code) << std::endl;  \
-    return false;                                         \
+#define GX_CHECK_STATUS(status_code)           \
+    if ((status_code) != GX_STATUS_SUCCESS) {  \
+    LOG(ERROR) << GetErrorInfo(status_code);   \
+    return false;                              \
 }
 
 /**
  * \brief This macro is used to check if the stream is successfully opened or closed.
  * \attention !! DO NOT use this macro in other place !!
  */
-#define GX_START_STOP_STREAM_CHECK_STATUS(status_code)       \
-if (status_code != GX_STATUS_SUCCESS) {                      \
-    if (raw_16_to_8_cache_ != nullptr) {                     \
-        delete[] raw_16_to_8_cache_;                         \
-        raw_16_to_8_cache_ = nullptr;                        \
-    }                                                        \
-    if (raw_8_to_rgb_24_cache_ != nullptr) {                 \
-        delete[] raw_8_to_rgb_24_cache_;                     \
-        raw_8_to_rgb_24_cache_ = nullptr;                    \
-    }                                                        \
-    std::cout << GetErrorInfo(status_code) << std::endl;     \
-    return false;                                            \
+#define GX_START_STOP_STREAM_CHECK_STATUS(status_code)  \
+if ((status_code) != GX_STATUS_SUCCESS) {               \
+    if (raw_16_to_8_cache_ != nullptr) {                \
+        delete[] raw_16_to_8_cache_;                    \
+        raw_16_to_8_cache_ = nullptr;                   \
+    }                                                   \
+    if (raw_8_to_rgb_24_cache_ != nullptr) {            \
+        delete[] raw_8_to_rgb_24_cache_;                \
+        raw_8_to_rgb_24_cache_ = nullptr;               \
+    }                                                   \
+    LOG(ERROR) << GetErrorInfo(status_code);            \
+    return false;                                       \
 }
 
 class DHCamera {

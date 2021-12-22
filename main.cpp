@@ -1,20 +1,28 @@
-#include "dh_camera.h"
 #include <unistd.h>
 #include <iostream>
 #include <ctime>
+
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include "log/easylogging++.h"
+#include "dh_camera.h"
+
+// Initialize EasyLogging++
+INITIALIZE_EASYLOGGINGPP
+
 int main() {
     DHCamera cam = DHCamera();
 
-    std::cout << "Waiting for camera ..." << std::endl;
+    el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
+
+    LOG(INFO) << "Waiting for camera ...";
 
     while (!cam.OpenCamera("KE0210010102"))
         sleep(1);
 
-    std::cout << "Camera connected." << std::endl;
+    LOG(INFO) << "Camera connected.";
 
     cam.SetFrameRate(60);
     cam.StartStream();

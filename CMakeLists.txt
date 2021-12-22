@@ -16,7 +16,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-add_executable(dh_camera_demo ${SRC})
+file(GLOB LOGGING_SRC ${CMAKE_CURRENT_SOURCE_DIR}/log/*.c*)
+
+add_executable(dh_camera_demo ${SRC} ${LOGGING_SRC})
 
 target_link_libraries(dh_camera_demo
         ${DH_LIBS}
