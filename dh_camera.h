@@ -38,7 +38,7 @@
  * \brief This macro is used to check if parameters are successfully modified or set.
  * \attention !! DO NOT use this macro in other place !!
  */
-#define GX_CHECK_STATUS(status_code)    \
+#define GX_CHECK_STATUS(status_code)                      \
     if (status_code != GX_STATUS_SUCCESS) {               \
     std::cout << GetErrorInfo(status_code) << std::endl;  \
     return false;                                         \
@@ -48,7 +48,7 @@
  * \brief This macro is used to check if the stream is successfully opened or closed.
  * \attention !! DO NOT use this macro in other place !!
  */
-#define GX_START_STOP_STREAM_CHECK_STATUS(status_code)  \
+#define GX_START_STOP_STREAM_CHECK_STATUS(status_code)       \
 if (status_code != GX_STATUS_SUCCESS) {                      \
     if (raw_16_to_8_cache_ != nullptr) {                     \
         delete[] raw_16_to_8_cache_;                         \
