@@ -28,6 +28,7 @@
         if ((status_code) != GX_STATUS_SUCCESS)           \
             LOG(ERROR) << GetErrorInfo(status_code);      \
         device_ = nullptr;                                \
+        serial_number_ = "";                              \
         if (!camera_count_) {                             \
             (status_code) = GXCloseLib();                 \
             if ((status_code) != GX_STATUS_SUCCESS)       \
@@ -436,7 +437,7 @@ public:
 
     [[maybe_unused]] std::string GetModelName();
 
-    [[maybe_unused]] inline std::string GetSerialNumber() { return serial_number_; };
+    [[maybe_unused]] inline std::string GetSerialNumber() { return serial_number_; }
 
     [[maybe_unused]] std::string GetDeviceVersion();
 

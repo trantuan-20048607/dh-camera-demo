@@ -200,6 +200,7 @@ bool DHCamera::CloseCamera() {
     // Reset camera parameters.
     color_filter_ = GX_COLOR_FILTER_NONE;
     payload_size_ = 0;
+    serial_number_ = "";
     LOG(INFO) << "Closed camera " << serial_number_ << ".";
     return true;
 }
@@ -377,7 +378,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
         sleep(1);
         if (!self->IsConnected()) {
             // Print information.
-            CLOG(ERROR, "camera") << self->serial_number_ << " is disconnected unexpectedly.";
+            LOG(ERROR) << self->serial_number_ << " is disconnected unexpectedly.";
             LOG(INFO) << "Preparing for reconnection...";
 
             // Stop the stream, errors are blocked.
