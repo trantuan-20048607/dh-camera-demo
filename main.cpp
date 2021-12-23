@@ -13,13 +13,12 @@ int main() {
     DHCamera cam = DHCamera();
 
     el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
+    el::Loggers::addFlag(el::LoggingFlag::MultiLoggerSupport);
 
-    LOG(INFO) << "Waiting for camera";
+    LOG(INFO) << "Waiting for camera...";
 
     while (!cam.OpenCamera("KE0210010102"))
         sleep(1);
-
-    LOG(INFO) << "Camera connected";
 
     cam.SetFrameRate(60);
     cam.StartStream();
@@ -54,6 +53,5 @@ int main() {
     img.release();
     cam.StopStream();
     cam.CloseCamera();
-    LOG(INFO) << "Exiting program";
     return 0;
 }

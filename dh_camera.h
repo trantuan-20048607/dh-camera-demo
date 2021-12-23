@@ -152,7 +152,7 @@ public:
         GX_STATUS status_code = GXImportConfigFile(device_, file_path.c_str());
         GX_CHECK_STATUS(status_code)
 
-        LOG(INFO) << "Imported configuration file " << file_path << " to " << serial_number_ << ".";
+        LOG(INFO) << "Imported " << serial_number_ << "'s configuration from " << file_path << ".";
         return true;
     }
 
@@ -175,7 +175,7 @@ public:
             GX_CHECK_STATUS(status_code)
         }
 
-        LOG(INFO) << serial_number_ << "'s frame rate set to "
+        LOG(INFO) << "Set " << serial_number_ << "'s frame rate to "
                   << (fps > 0 ? std::to_string(fps) : "unlimited") << ".";
 
         return true;
