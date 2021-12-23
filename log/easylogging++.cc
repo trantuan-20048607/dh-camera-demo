@@ -104,7 +104,7 @@ namespace el {
             static const char *kDefaultLogFileParam = "--default-log-file";
 #endif  // !defined(ELPP_DISABLE_LOG_FILE_FROM_ARG)
 #if defined(ELPP_LOGGING_FLAGS_FROM_ARG)
-            static const char* kLoggingFlagsParam                      =      "--logging-flags";
+            static const char *kLoggingFlagsParam = "--logging-flags";
 #endif  // defined(ELPP_LOGGING_FLAGS_FROM_ARG)
             static const char *kValidLoggerIdSymbols =
                     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._";
@@ -948,10 +948,12 @@ namespace el {
             }
 
 #if defined(ELPP_UNICODE)
-            void Str::replaceFirstWithEscape(base::type::string_t& str, const base::type::string_t& replaceWhat,
-                                             const std::string& replaceWith) {
-              replaceFirstWithEscape(str, replaceWhat, base::type::string_t(replaceWith.begin(), replaceWith.end()));
+
+            void Str::replaceFirstWithEscape(base::type::string_t &str, const base::type::string_t &replaceWhat,
+                                             const std::string &replaceWith) {
+                replaceFirstWithEscape(str, replaceWhat, base::type::string_t(replaceWith.begin(), replaceWith.end()));
             }
+
 #endif  // defined(ELPP_UNICODE)
 
             std::string &Str::toUpper(std::string &str) {
@@ -2203,12 +2205,12 @@ namespace el {
 #endif  // !defined(ELPP_DISABLE_LOG_FILE_FROM_ARG)
 #if defined(ELPP_LOGGING_FLAGS_FROM_ARG)
             if (m_commandLineArgs.hasParamWithValue(base::consts::kLoggingFlagsParam)) {
-              int userInput = atoi(m_commandLineArgs.getParamValue(base::consts::kLoggingFlagsParam));
-              if (ELPP_DEFAULT_LOGGING_FLAGS == 0x0) {
-                m_flags = userInput;
-              } else {
-                base::utils::addFlag<base::type::EnumType>(userInput, &m_flags);
-              }
+                int userInput = atoi(m_commandLineArgs.getParamValue(base::consts::kLoggingFlagsParam));
+                if (ELPP_DEFAULT_LOGGING_FLAGS == 0x0) {
+                    m_flags = userInput;
+                } else {
+                    base::utils::addFlag<base::type::EnumType>(userInput, &m_flags);
+                }
             }
 #endif  // defined(ELPP_LOGGING_FLAGS_FROM_ARG)
         }
@@ -2217,14 +2219,18 @@ namespace el {
 
 // LogDispatchCallback
 #if defined(ELPP_THREAD_SAFE)
-    void LogDispatchCallback::handle(const LogDispatchData* data) {
-      base::threading::ScopedLock scopedLock(m_fileLocksMapLock);
-      std::string filename = data->logMessage()->logger()->typedConfigurations()->filename(data->logMessage()->level());
-      auto lock = m_fileLocks.find(filename);
-      if (lock == m_fileLocks.end()) {
-        m_fileLocks.emplace(std::make_pair(filename, std::unique_ptr<base::threading::Mutex>(new base::threading::Mutex)));
-      }
+
+    void LogDispatchCallback::handle(const LogDispatchData *data) {
+        base::threading::ScopedLock scopedLock(m_fileLocksMapLock);
+        std::string filename = data->logMessage()->logger()->typedConfigurations()->filename(
+                data->logMessage()->level());
+        auto lock = m_fileLocks.find(filename);
+        if (lock == m_fileLocks.end()) {
+            m_fileLocks.emplace(
+                    std::make_pair(filename, std::unique_ptr<base::threading::Mutex>(new base::threading::Mutex)));
+        }
     }
+
 #else
 
     void LogDispatchCallback::handle(const LogDispatchData * /*data*/) {}
@@ -3173,3 +3179,13 @@ namespace el {
     }
 
 } // namespace el
+
+
+// Custom part.
+namespace el {
+    namespace base {
+        el::base::type::StoragePointer elStorage(
+                new el::base::Storage(el::LogBuilderPtr(new el::base::DefaultLogBuilder())));
+    }
+    el::base::debug::CrashHandler elCrashHandler(true);
+}

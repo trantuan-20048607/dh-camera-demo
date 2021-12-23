@@ -5,6 +5,15 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(DH_CAM_PATH /home/trantuan/Galaxy_camera)
 
+# Optimizer
+add_compile_options(-O3 -std=c++2a -flto -march=native)
+
+# Options for EasyLogging++
+add_compile_options(
+        -DELPP_THREAD_SAFE
+        -DELPP_UNICODE
+)
+
 find_package(OpenCV 4 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
