@@ -123,7 +123,7 @@ public:
      * \param [out] image Acquired image will be stored here.
      * \return A boolean shows if buffer is not empty, or if you can successfully get an image.
      */
-    bool GetImage(cv::Mat &);
+    inline bool GetImage(cv::Mat &image) { return buffer_.Pop(image); }
 
 
     /**
@@ -501,7 +501,7 @@ private:
     unsigned char *raw_8_to_rgb_24_cache_;
     unsigned char *raw_16_to_8_cache_;
 
-    Buffer<cv::Mat, 3> buffer_;
+    Buffer<cv::Mat, 4> buffer_;
 };
 
 #endif  // _DH_CAMERA_H_

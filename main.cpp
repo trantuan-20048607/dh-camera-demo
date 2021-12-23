@@ -20,13 +20,12 @@ int main() {
     while (!cam.OpenCamera("KE0210010102", "../config/KE0210010102.txt"))
         sleep(1);
 
-    cam.SetFrameRate(60);
     cam.StartStream();
     cv::Mat img;
     uint32_t frame_count = 0;
     uint32_t last_second_frame_cont = 0;
     time_t start_time = time(nullptr), end_time;
-    for (uint32_t fps = 0; cv::waitKey(1) != 'q'; ++frame_count) {
+    for (uint32_t fps = 0; cv::waitKey(2) != 'q'; ++frame_count) {
         if (!cam.GetImage(img)) {
             --frame_count;
             continue;

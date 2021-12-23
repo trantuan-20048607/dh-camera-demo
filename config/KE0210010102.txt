@@ -27,7 +27,7 @@ ChunkModeActive	0
 ChunkEnable	0
 ExposureTime	5000
 AcquisitionFrameRateMode	On
-AcquisitionFrameRate	60
+AcquisitionFrameRate	144
 RegionSelector	Region0
 OffsetX	0
 RegionSelector	Region0

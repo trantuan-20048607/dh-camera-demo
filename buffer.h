@@ -9,7 +9,7 @@ private:
     Type data_[len];
     int head_;
     int tail_;
-    std::mutex reading_[len];
+    std::mutex lock_[len];
 
 public:
     Buffer<Type, len>() : head_(0), tail_(0) {}
@@ -25,7 +25,7 @@ public:
     }
 
     void Push(const Type &obj) {
-        std::lock_guard<std::mutex> lock(reading_[head_]);
+        std::lock_guard<std::mutex> lock(lock_[head_]);
         data_[tail_] = obj;
         tail_ = (tail_ + 1) % len;
         if (head_ == tail_) {
@@ -36,7 +36,7 @@ public:
     bool Pop(Type &obj) {
         if (Empty())
             return false;
-        std::lock_guard<std::mutex> lock(reading_[head_]);
+        std::lock_guard<std::mutex> lock(lock_[head_]);
         obj = data_[head_];
         head_ = (head_ + 1) % len;
         return true;

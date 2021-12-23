@@ -234,16 +234,11 @@ bool DHCamera::IsConnected() {
 
     // Find known device.
     for (uint32_t i = 0; i < device_num; i++) {
-        LOG(DEBUG) << "Found device " << device_list[i].szSN << ".";
         if (device_list[i].szSN == this->serial_number_)
             return true;
     }
 
     return false;
-}
-
-bool DHCamera::GetImage(cv::Mat &image) {
-    return buffer_.Pop(image);
 }
 
 void DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *param) {
