@@ -135,10 +135,11 @@ public:
      * \param file_path File path.
      * \return A boolean shows if config is successfully saved.
      */
-    [[maybe_unused]] inline bool ExportConfigurationFile(const std::string &file_path) {
+    inline bool ExportConfigurationFile(const std::string &file_path) {
         GX_STATUS status_code = GXExportConfigFile(device_, file_path.c_str());
         GX_CHECK_STATUS(status_code)
 
+        LOG(INFO) << ("Saved " + serial_number_ + "'s configuration to " + file_path + ".");
         return true;
     }
 
@@ -147,10 +148,11 @@ public:
      * \param file_path File path.
      * \return A boolean shows if config is successfully imported.
      */
-    [[maybe_unused]] inline bool ImportConfigurationFile(const std::string &file_path) {
+    inline bool ImportConfigurationFile(const std::string &file_path) {
         GX_STATUS status_code = GXImportConfigFile(device_, file_path.c_str());
         GX_CHECK_STATUS(status_code)
 
+        LOG(INFO) << ("Imported configuration file " + file_path + " to " + serial_number_ + ".");
         return true;
     }
 
@@ -173,6 +175,9 @@ public:
             GX_CHECK_STATUS(status_code)
         }
 
+        LOG(INFO) << (serial_number_ + "'s frame rate set to "
+                      + (fps > 0 ? std::to_string(fps) : "unlimited") + ".");
+
         return true;
     }
 
@@ -187,6 +192,10 @@ public:
                                 GX_ENUM_EXPOSURE_MODE,
                                 gx_exposure_mode_entry);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s exposure mode to "
+                       + std::to_string(gx_exposure_mode_entry) + ".");
+
         return true;
     }
 
@@ -202,6 +211,10 @@ public:
                                 GX_ENUM_EXPOSURE_AUTO,
                                 gx_exposure_auto_entry);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s exposure to auto mode "
+                       + std::to_string(gx_exposure_auto_entry) + ".");
+
         return true;
     }
 
@@ -216,6 +229,10 @@ public:
                                 GX_ENUM_EXPOSURE_TIME_MODE,
                                 gx_exposure_time_mode_entry);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s exposure time mode to "
+                       + std::to_string(gx_exposure_time_mode_entry) + ".");
+
         return true;
     }
 
@@ -225,6 +242,10 @@ public:
                                 GX_FLOAT_EXPOSURE_TIME,
                                 time);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s exposure time to "
+                       + std::to_string(time) + ".");
+
         return true;
     }
 
@@ -240,6 +261,10 @@ public:
                                 GX_ENUM_GAIN_AUTO,
                                 gx_gain_auto_entry);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s gain to auto mode "
+                       + std::to_string(gx_gain_auto_entry) + ".");
+
         return true;
     }
 
@@ -261,6 +286,9 @@ public:
                                  &value);
         GX_CHECK_STATUS(status_code)
 
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s gain value to "
+                       + std::to_string(gain) + ".");
+
         return true;
     }
 
@@ -275,6 +303,10 @@ public:
                                 GX_ENUM_GAIN_AUTO,
                                 gx_balance_white_auto_entry);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s balance white to auto mode "
+                       + std::to_string(gx_balance_white_auto_entry) + ".");
+
         return true;
     }
 
@@ -289,6 +321,10 @@ public:
                                 GX_ENUM_TRIGGER_MODE,
                                 gx_trigger_mode_entry);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s trigger mode to "
+                       + std::to_string(gx_trigger_mode_entry) + ".");
+
         return true;
     }
 
@@ -307,6 +343,10 @@ public:
                                 GX_ENUM_TRIGGER_SOURCE,
                                 gx_trigger_source_entry);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Set " + serial_number_ + "'s trigger source to "
+                       + std::to_string(gx_trigger_source_entry) + ".");
+
         return true;
     }
 
@@ -317,6 +357,9 @@ public:
                                GX_INT_PAYLOAD_SIZE,
                                payload_size);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << (serial_number_ + "'s payload size is " + std::to_string(*payload_size) + ".");
+
         return true;
     }
 
@@ -334,6 +377,9 @@ public:
                                 GX_ENUM_PIXEL_COLOR_FILTER,
                                 color_filter);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << (serial_number_ + "'s color filter is " + std::to_string(*color_filter) + ".");
+
         return true;
     }
 
@@ -343,6 +389,9 @@ public:
                                 GX_ENUM_PIXEL_FORMAT,
                                 pixel_format);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << (serial_number_ + "'s pixel format is " + std::to_string(*pixel_format) + ".");
+
         return true;
     }
 
@@ -351,6 +400,9 @@ public:
         status_code = GXSendCommand(device_,
                                     GX_COMMAND_TRIGGER_SOFTWARE);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Sent trigger command to " + serial_number_ + ".");
+
         return true;
     }
 
@@ -361,6 +413,9 @@ public:
                                                 this,
                                                 callback);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Registered " + serial_number_ + "'s capture callback.");
+
         return true;
     }
 
@@ -368,6 +423,8 @@ public:
         GX_STATUS status_code;
         status_code = GXUnregisterCaptureCallback(device_);
         GX_CHECK_STATUS(status_code)
+
+        LOG(DEBUG) << ("Unregistered " + serial_number_ + "'s capture callback.");
 
         return true;
     }

@@ -148,8 +148,9 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
     if (!daemon_thread_id_) {
         stop_daemon_thread_flag_ = false;
         pthread_create(&daemon_thread_id_, nullptr, DaemonThreadFunction, this);
+        LOG(DEBUG) << ("Started daemon thread " + std::to_string(daemon_thread_id_) + ".");
     }
-
+    LOG(INFO) << ("Opened camera " + serial_number_ + ".");
     return true;
 }
 
@@ -160,6 +161,7 @@ bool DHCamera::CloseCamera() {
     // Stop daemon thread.
     stop_daemon_thread_flag_ = true;
     pthread_join(daemon_thread_id_, nullptr);
+    LOG(DEBUG) << ("Daemon thread " + std::to_string(daemon_thread_id_) + " stopped.");
 
     // Reset daemon thread parameters.
     daemon_thread_id_ = 0;
@@ -198,7 +200,7 @@ bool DHCamera::CloseCamera() {
     // Reset camera parameters.
     color_filter_ = GX_COLOR_FILTER_NONE;
     payload_size_ = 0;
-
+    LOG(INFO) << ("Closed camera " + serial_number_ + ".");
     return true;
 }
 
@@ -218,7 +220,7 @@ bool DHCamera::StartStream() {
     GX_START_STOP_STREAM_CHECK_STATUS(status_code)
 
     stream_running_ = true;
-
+    LOG(INFO) << (serial_number_ + " stream started.");
     return true;
 }
 
@@ -241,7 +243,7 @@ bool DHCamera::StopStream() {
         delete[] raw_8_to_rgb_24_cache_;
         raw_8_to_rgb_24_cache_ = nullptr;
     }
-
+    LOG(INFO) << (serial_number_ + " stream stopped.");
     return true;
 }
 
@@ -323,7 +325,7 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_callback) {
                                            DX_PIXEL_COLOR_FILTER(color_filter_),
                                            false);
             if (dx_status_code != DX_OK) {
-                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code));
+                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code) + ".");
                 return false;
             }
             break;
@@ -343,7 +345,7 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_callback) {
                                            frame_callback->nHeight,
                                            DX_BIT_2_9);
             if (dx_status_code != DX_OK) {
-                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code));
+                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code) + ".");
                 return false;
             }
             // Convert to the RGB24 image.
@@ -355,7 +357,7 @@ bool DHCamera::Raw8Raw16ToRGB24(GX_FRAME_CALLBACK_PARAM *frame_callback) {
                                            DX_PIXEL_COLOR_FILTER(color_filter_),
                                            false);
             if (dx_status_code != DX_OK) {
-                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code));
+                LOG(ERROR) << ("DxRaw8toRGB24 Failed, Error Code: " + std::to_string(dx_status_code) + ".");
                 return false;
             }
             break;
@@ -434,7 +436,6 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                     self->stream_running_ = false;
                 }
             }
-
             LOG(INFO) << ("Reconnect to " + self->serial_number_ + " successfully.");
         }
     }

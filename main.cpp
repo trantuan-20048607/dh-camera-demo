@@ -57,5 +57,6 @@ int main() {
     img.release();
     cam.StopStream();
     cam.CloseCamera();
+    LOG(INFO) << "Exiting program ...";
     return 0;
 }
