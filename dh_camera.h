@@ -139,7 +139,7 @@ public:
         GX_STATUS status_code = GXExportConfigFile(device_, file_path.c_str());
         GX_CHECK_STATUS(status_code)
 
-        LOG(INFO) << "Saved" << serial_number_ << "configuration to" << file_path;
+        LOG(INFO) << "Saved " << serial_number_ << "'s configuration to " << file_path << ".";
         return true;
     }
 
@@ -152,7 +152,7 @@ public:
         GX_STATUS status_code = GXImportConfigFile(device_, file_path.c_str());
         GX_CHECK_STATUS(status_code)
 
-        LOG(INFO) << "Imported configuration file" << file_path << "to" << serial_number_;
+        LOG(INFO) << "Imported configuration file " << file_path << " to " << serial_number_ << ".";
         return true;
     }
 
@@ -175,8 +175,8 @@ public:
             GX_CHECK_STATUS(status_code)
         }
 
-        LOG(INFO) << serial_number_ << "frame rate set to"
-                  << (fps > 0 ? std::to_string(fps) : "unlimited");
+        LOG(INFO) << serial_number_ << "'s frame rate set to "
+                  << (fps > 0 ? std::to_string(fps) : "unlimited") << ".";
 
         return true;
     }
@@ -193,8 +193,8 @@ public:
                                 gx_exposure_mode_entry);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "exposure mode to"
-                   << std::to_string(gx_exposure_mode_entry);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s exposure mode to "
+                   << std::to_string(gx_exposure_mode_entry) << ".";
 
         return true;
     }
@@ -212,8 +212,8 @@ public:
                                 gx_exposure_auto_entry);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "exposure to auto mode"
-                   << std::to_string(gx_exposure_auto_entry);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s exposure to auto mode "
+                   << std::to_string(gx_exposure_auto_entry) << ".";
 
         return true;
     }
@@ -230,8 +230,8 @@ public:
                                 gx_exposure_time_mode_entry);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "exposure time mode to"
-                   << std::to_string(gx_exposure_time_mode_entry);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s exposure time mode to "
+                   << std::to_string(gx_exposure_time_mode_entry) << ".";
 
         return true;
     }
@@ -243,8 +243,8 @@ public:
                                 time);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "exposure time to"
-                   << std::to_string(time);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s exposure time to "
+                   << std::to_string(time) << ".";
 
         return true;
     }
@@ -262,8 +262,8 @@ public:
                                 gx_gain_auto_entry);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "gain to auto mode"
-                   << std::to_string(gx_gain_auto_entry);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s gain to auto mode "
+                   << std::to_string(gx_gain_auto_entry) << ".";
 
         return true;
     }
@@ -286,8 +286,8 @@ public:
                                  &value);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "gain value to"
-                   << std::to_string(gain);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s gain value to "
+                   << std::to_string(gain) << ".";
 
         return true;
     }
@@ -304,8 +304,8 @@ public:
                                 gx_balance_white_auto_entry);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "balance white to auto mode"
-                   << std::to_string(gx_balance_white_auto_entry);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s balance white to auto mode "
+                   << std::to_string(gx_balance_white_auto_entry) << ".";
 
         return true;
     }
@@ -322,8 +322,8 @@ public:
                                 gx_trigger_mode_entry);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "trigger mode to"
-                   << std::to_string(gx_trigger_mode_entry);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s trigger mode to "
+                   << std::to_string(gx_trigger_mode_entry) << ".";
 
         return true;
     }
@@ -344,8 +344,8 @@ public:
                                 gx_trigger_source_entry);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Set" << serial_number_ << "trigger source to"
-                   << std::to_string(gx_trigger_source_entry);
+        LOG(DEBUG) << "Set " << serial_number_ << "'s trigger source to "
+                   << std::to_string(gx_trigger_source_entry) << ".";
 
         return true;
     }
@@ -358,7 +358,7 @@ public:
                                payload_size);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << serial_number_ << "payload size is" << std::to_string(*payload_size);
+        LOG(DEBUG) << serial_number_ << "'s payload size is " << std::to_string(*payload_size) << ".";
 
         return true;
     }
@@ -378,7 +378,7 @@ public:
                                 color_filter);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Color filter of" << serial_number_ << "is" << std::to_string(*color_filter);
+        LOG(DEBUG) << serial_number_ << "'s color filter is " << std::to_string(*color_filter) << ".";
 
         return true;
     }
@@ -390,7 +390,7 @@ public:
                                 pixel_format);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Pixel format of" << serial_number_ << "is" << std::to_string(*pixel_format);
+        LOG(DEBUG) << serial_number_ << "'s pixel format is " << std::to_string(*pixel_format) << ".";
 
         return true;
     }
@@ -401,7 +401,7 @@ public:
                                     GX_COMMAND_TRIGGER_SOFTWARE);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Sent trigger command to" << serial_number_;
+        LOG(DEBUG) << "Sent trigger command to " << serial_number_ << ".";
 
         return true;
     }
@@ -414,7 +414,7 @@ public:
                                                 callback);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Registered" << serial_number_ << "capture callback";
+        LOG(DEBUG) << "Registered " << serial_number_ << "'s capture callback.";
 
         return true;
     }
@@ -424,7 +424,7 @@ public:
         status_code = GXUnregisterCaptureCallback(device_);
         GX_CHECK_STATUS(status_code)
 
-        LOG(DEBUG) << "Unregistered" << serial_number_ << "capture callback";
+        LOG(DEBUG) << "Unregistered " << serial_number_ << "'s capture callback.";
 
         return true;
     }

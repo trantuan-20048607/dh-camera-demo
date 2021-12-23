@@ -13,7 +13,6 @@ int main() {
     DHCamera cam = DHCamera();
 
     el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
-    el::Loggers::addFlag(el::LoggingFlag::AutoSpacing);
 
     LOG(INFO) << "Waiting for camera";
 

@@ -362,7 +362,9 @@ ELPP_INTERNAL_DEBUGGING_OUT_INFO << ELPP_INTERNAL_DEBUGGING_MSG(internalInfoStre
 #include <cstdarg>
 
 #if defined(ELPP_UNICODE)
-                                                                                                                        #   include <locale>
+
+#   include <locale>
+
 #  if ELPP_OS_WINDOWS
 #      include <codecvt>
 #  endif // ELPP_OS_WINDOWS
@@ -405,9 +407,11 @@ ELPP_INTERNAL_DEBUGGING_OUT_INFO << ELPP_INTERNAL_DEBUGGING_MSG(internalInfoStre
 #include <type_traits>
 
 #if ELPP_THREADING_ENABLED
-                                                                                                                        #  if ELPP_USE_STD_THREADING
+#  if ELPP_USE_STD_THREADING
+
 #      include <mutex>
 #      include <thread>
+
 #  else
 #      if ELPP_OS_UNIX
 #         include <pthread.h>
@@ -535,18 +539,18 @@ namespace el {
 #undef ELPP_STRLEN
 #undef ELPP_COUT
 #if defined(ELPP_UNICODE)
-                                                                                                                                    #  define ELPP_LITERAL(txt) L##txt
+#  define ELPP_LITERAL(txt) L##txt
 #  define ELPP_STRLEN wcslen
 #  if defined ELPP_CUSTOM_COUT
 #    define ELPP_COUT ELPP_CUSTOM_COUT
 #  else
 #    define ELPP_COUT std::wcout
 #  endif  // defined ELPP_CUSTOM_COUT
-typedef wchar_t char_t;
-typedef std::wstring string_t;
-typedef std::wstringstream stringstream_t;
-typedef std::wfstream fstream_t;
-typedef std::wostream ostream_t;
+            typedef wchar_t char_t;
+            typedef std::wstring string_t;
+            typedef std::wstringstream stringstream_t;
+            typedef std::wfstream fstream_t;
+            typedef std::wostream ostream_t;
 #else
 #  define ELPP_LITERAL(txt) txt
 #  define ELPP_STRLEN strlen
@@ -951,84 +955,84 @@ static const char* kPerformanceLoggerId                    =      "performance";
         }  // namespace utils
         namespace threading {
 #if ELPP_THREADING_ENABLED
-                                                                                                                                    #  if !ELPP_USE_STD_THREADING
-namespace internal {
-/// @brief A mutex wrapper for compiler that dont yet support std::recursive_mutex
-class Mutex : base::NoCopy {
- public:
-  Mutex(void) {
+#  if !ELPP_USE_STD_THREADING
+            namespace internal {
+            /// @brief A mutex wrapper for compiler that dont yet support std::recursive_mutex
+            class Mutex : base::NoCopy {
+             public:
+              Mutex(void) {
 #  if ELPP_OS_UNIX
-    pthread_mutexattr_t attr;
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&m_underlyingMutex, &attr);
-    pthread_mutexattr_destroy(&attr);
+                pthread_mutexattr_t attr;
+                pthread_mutexattr_init(&attr);
+                pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+                pthread_mutex_init(&m_underlyingMutex, &attr);
+                pthread_mutexattr_destroy(&attr);
 #  elif ELPP_OS_WINDOWS
-    InitializeCriticalSection(&m_underlyingMutex);
+                InitializeCriticalSection(&m_underlyingMutex);
 #  endif  // ELPP_OS_UNIX
-  }
+              }
 
-  virtual ~Mutex(void) {
+              virtual ~Mutex(void) {
 #  if ELPP_OS_UNIX
-    pthread_mutex_destroy(&m_underlyingMutex);
+                pthread_mutex_destroy(&m_underlyingMutex);
 #  elif ELPP_OS_WINDOWS
-    DeleteCriticalSection(&m_underlyingMutex);
+                DeleteCriticalSection(&m_underlyingMutex);
 #  endif  // ELPP_OS_UNIX
-  }
+              }
 
-  inline void lock(void) {
+              inline void lock(void) {
 #  if ELPP_OS_UNIX
-    pthread_mutex_lock(&m_underlyingMutex);
+                pthread_mutex_lock(&m_underlyingMutex);
 #  elif ELPP_OS_WINDOWS
-    EnterCriticalSection(&m_underlyingMutex);
+                EnterCriticalSection(&m_underlyingMutex);
 #  endif  // ELPP_OS_UNIX
-  }
+              }
 
-  inline bool try_lock(void) {
+              inline bool try_lock(void) {
 #  if ELPP_OS_UNIX
-    return (pthread_mutex_trylock(&m_underlyingMutex) == 0);
+                return (pthread_mutex_trylock(&m_underlyingMutex) == 0);
 #  elif ELPP_OS_WINDOWS
-    return TryEnterCriticalSection(&m_underlyingMutex);
+                return TryEnterCriticalSection(&m_underlyingMutex);
 #  endif  // ELPP_OS_UNIX
-  }
+              }
 
-  inline void unlock(void) {
+              inline void unlock(void) {
 #  if ELPP_OS_UNIX
-    pthread_mutex_unlock(&m_underlyingMutex);
+                pthread_mutex_unlock(&m_underlyingMutex);
 #  elif ELPP_OS_WINDOWS
-    LeaveCriticalSection(&m_underlyingMutex);
+                LeaveCriticalSection(&m_underlyingMutex);
 #  endif  // ELPP_OS_UNIX
-  }
+              }
 
- private:
+             private:
 #  if ELPP_OS_UNIX
-  pthread_mutex_t m_underlyingMutex;
+              pthread_mutex_t m_underlyingMutex;
 #  elif ELPP_OS_WINDOWS
-  CRITICAL_SECTION m_underlyingMutex;
+              CRITICAL_SECTION m_underlyingMutex;
 #  endif  // ELPP_OS_UNIX
-};
-/// @brief Scoped lock for compiler that dont yet support std::lock_guard
-template <typename M>
-class ScopedLock : base::NoCopy {
- public:
-  explicit ScopedLock(M& mutex) {
-    m_mutex = &mutex;
-    m_mutex->lock();
-  }
+            };
+            /// @brief Scoped lock for compiler that dont yet support std::lock_guard
+            template <typename M>
+            class ScopedLock : base::NoCopy {
+             public:
+              explicit ScopedLock(M& mutex) {
+                m_mutex = &mutex;
+                m_mutex->lock();
+              }
 
-  virtual ~ScopedLock(void) {
-    m_mutex->unlock();
-  }
- private:
-  M* m_mutex;
-  ScopedLock(void);
-};
-} // namespace internal
-typedef base::threading::internal::Mutex Mutex;
-typedef base::threading::internal::ScopedLock<base::threading::Mutex> ScopedLock;
+              virtual ~ScopedLock(void) {
+                m_mutex->unlock();
+              }
+             private:
+              M* m_mutex;
+              ScopedLock(void);
+            };
+            } // namespace internal
+            typedef base::threading::internal::Mutex Mutex;
+            typedef base::threading::internal::ScopedLock<base::threading::Mutex> ScopedLock;
 #  else
-typedef std::recursive_mutex Mutex;
-typedef std::lock_guard<base::threading::Mutex> ScopedLock;
+            typedef std::recursive_mutex Mutex;
+            typedef std::lock_guard<base::threading::Mutex> ScopedLock;
 #  endif  // !ELPP_USE_STD_THREADING
 #else
             namespace internal {
@@ -1083,22 +1087,24 @@ typedef std::lock_guard<base::threading::Mutex> ScopedLock;
             };
 
 #if ELPP_THREADING_ENABLED
-                                                                                                                                    #  if !ELPP_USE_STD_THREADING
-/// @brief Gets ID of currently running threading in windows systems. On unix, nothing is returned.
-static std::string getCurrentThreadId(void) {
-  std::stringstream ss;
+#  if !ELPP_USE_STD_THREADING
+            /// @brief Gets ID of currently running threading in windows systems. On unix, nothing is returned.
+            static std::string getCurrentThreadId(void) {
+              std::stringstream ss;
 #      if (ELPP_OS_WINDOWS)
-  ss << GetCurrentThreadId();
+              ss << GetCurrentThreadId();
 #      endif  // (ELPP_OS_WINDOWS)
-  return ss.str();
-}
+              return ss.str();
+            }
 #  else
+
 /// @brief Gets ID of currently running threading using std::this_thread::get_id()
-static std::string getCurrentThreadId(void) {
-  std::stringstream ss;
-  ss << std::this_thread::get_id();
-  return ss.str();
-}
+            static std::string getCurrentThreadId(void) {
+                std::stringstream ss;
+                ss << std::this_thread::get_id();
+                return ss.str();
+            }
+
 #  endif  // !ELPP_USE_STD_THREADING
 #else
 
@@ -1187,8 +1193,10 @@ static std::string getCurrentThreadId(void) {
                                                    const base::type::string_t &replaceWith);
 
 #if defined(ELPP_UNICODE)
-                                                                                                                                        static void replaceFirstWithEscape(base::type::string_t& str, const base::type::string_t& replaceWhat,
-                                     const std::string& replaceWith);
+
+                static void replaceFirstWithEscape(base::type::string_t &str, const base::type::string_t &replaceWhat,
+                                                   const std::string &replaceWith);
+
 #endif  // defined(ELPP_UNICODE)
 
                 /// @brief Converts string to uppercase
