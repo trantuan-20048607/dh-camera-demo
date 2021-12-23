@@ -25,7 +25,7 @@ Height	1024
 RegionSelector	Region0
 ChunkModeActive	0
 ChunkEnable	0
-ExposureTime	10000
+ExposureTime	5000
 AcquisitionFrameRateMode	On
 AcquisitionFrameRate	60
 RegionSelector	Region0
@@ -99,14 +99,14 @@ UserOutputSelector	UserOutput2
 UserOutputValue	0
 UserOutputSelector	UserOutput0
 GainSelector	AnalogAll
-Gain	0
+Gain	16
 GainSelector	AnalogAll
 GainSelector	AnalogAll
 GainAuto	Off
 GainSelector	AnalogAll
 AutoGainMin	0
 AutoGainMax	16
-BalanceWhiteAuto	Continuous
+BalanceWhiteAuto	Once
 AWBLampHouse	Adaptive
 AWBROIWidth	1280
 AWBROIHeight	1024

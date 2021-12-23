@@ -2,7 +2,6 @@
 #define _BUFFER_H_
 
 #include <mutex>
-#include <chrono>
 
 template<typename Type, int len>
 class Buffer {

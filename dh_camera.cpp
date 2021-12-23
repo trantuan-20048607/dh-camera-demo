@@ -243,8 +243,6 @@ bool DHCamera::IsConnected() {
 }
 
 bool DHCamera::GetImage(cv::Mat &image) {
-    if (!buffer_.Empty())
-        image.release();
     return buffer_.Pop(image);
 }
 
@@ -268,7 +266,6 @@ void DHCamera::DefaultCaptureCallback(GX_FRAME_CALLBACK_PARAM *param) {
                             camera->raw_8_to_rgb_24_cache_);
     cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 
-    camera->buffer_[0].release();
     camera->buffer_.Push(image);
 }
 
