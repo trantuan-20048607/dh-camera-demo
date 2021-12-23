@@ -4,18 +4,12 @@
 #include <string>
 
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
 
 #include "GxIAPI.h"
 #include "DxImageProc.h"
 
 #include "log/easylogging++.h"
 #include "buffer.h"
-
-#define GX_ACQ_BUFFER_NUM           5            // Acquisition Buffer Qty.
-#define GX_ACQ_TRANSFER_SIZE        (64 * 1024)  // Size of data transfer block.
-#define GX_ACQ_TRANSFER_NUMBER_URB  64           // Qty. of data transfer block.
 
 /**
  * \brief This macro is used to check if the device is successfully initialized.
@@ -89,6 +83,7 @@ public:
     /**
      * \brief Open a camera.
      * \param serial_number Serial number of the camera you wanna open.
+     * \param config_file Will read configurations from this file.
      * \return A boolean shows whether the camera is successfully opened.
      */
     bool OpenCamera(const std::string &serial_number, const std::string &config_file);

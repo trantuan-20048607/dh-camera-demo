@@ -233,9 +233,11 @@ bool DHCamera::IsConnected() {
     }
 
     // Find known device.
-    for (uint32_t i = 0; i < device_num; i++)
+    for (uint32_t i = 0; i < device_num; i++) {
+        LOG(DEBUG) << "Found device " << device_list[i].szSN << ".";
         if (device_list[i].szSN == this->serial_number_)
             return true;
+    }
 
     return false;
 }
@@ -405,7 +407,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
     return nullptr;
 }
 
-std::string DHCamera::GetVendorName() {
+[[maybe_unused]] std::string DHCamera::GetVendorName() {
     size_t str_size = 0;
 
     GX_STATUS status_code = GXGetStringLength(device_,
@@ -428,10 +430,12 @@ std::string DHCamera::GetVendorName() {
         return "";
     }
 
+    LOG(DEBUG) << serial_number_ << "'s vendor name is " << vendor_name << ".";
+
     return vendor_name;
 }
 
-std::string DHCamera::GetModelName() {
+[[maybe_unused]] std::string DHCamera::GetModelName() {
     size_t str_size = 0;
 
     GX_STATUS status_code = GXGetStringLength(device_,
@@ -454,10 +458,12 @@ std::string DHCamera::GetModelName() {
         return "";
     }
 
+    LOG(DEBUG) << serial_number_ << "'s model name is " << model_name << ".";
+
     return model_name;
 }
 
-std::string DHCamera::GetDeviceVersion() {
+[[maybe_unused]] std::string DHCamera::GetDeviceVersion() {
     size_t str_size = 0;
 
     GX_STATUS status_code = GXGetStringLength(device_,
@@ -479,6 +485,8 @@ std::string DHCamera::GetDeviceVersion() {
         LOG(ERROR) << GetErrorInfo(status_code);
         return "";
     }
+
+    LOG(DEBUG) << serial_number_ << "'s device version is " << device_version << ".";
 
     return device_version;
 }
