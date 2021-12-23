@@ -436,7 +436,7 @@ public:
 
     [[maybe_unused]] std::string GetModelName();
 
-    [[maybe_unused]] [[maybe_unused]] std::string GetSerialNumber();
+    [[maybe_unused]] inline std::string GetSerialNumber() { return serial_number_; };
 
     [[maybe_unused]] std::string GetDeviceVersion();
 

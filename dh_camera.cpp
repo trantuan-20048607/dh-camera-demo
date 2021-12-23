@@ -495,32 +495,6 @@ void *DHCamera::DaemonThreadFunction(void *p) {
     return model_name;
 }
 
-[[maybe_unused]] std::string DHCamera::GetSerialNumber() {
-    size_t str_size = 0;
-
-    GX_STATUS status_code = GXGetStringLength(device_,
-                                              GX_STRING_DEVICE_SERIAL_NUMBER,
-                                              &str_size);
-    if (status_code != GX_STATUS_SUCCESS) {
-        LOG(ERROR) << GetErrorInfo(status_code);
-        return "";
-    }
-
-    char *serial_number = new char[str_size];
-
-    status_code = GXGetString(device_,
-                              GX_STRING_DEVICE_SERIAL_NUMBER,
-                              serial_number,
-                              &str_size);
-    if (status_code != GX_STATUS_SUCCESS) {
-        LOG(ERROR) << GetErrorInfo(status_code);
-        delete[] serial_number;
-        return "";
-    }
-
-    return serial_number;
-}
-
 [[maybe_unused]] std::string DHCamera::GetDeviceVersion() {
     size_t str_size = 0;
 
