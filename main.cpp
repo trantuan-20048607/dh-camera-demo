@@ -17,7 +17,7 @@ int main() {
 
     LOG(INFO) << "Waiting for camera...";
 
-    while (!cam.OpenCamera("KE0210010102"))
+    while (!cam.OpenCamera("KE0210010102", "../config/KE0210010102.txt"))
         sleep(1);
 
     cam.SetFrameRate(60);

@@ -14,7 +14,7 @@
 
 unsigned int DHCamera::camera_count_ = 0;
 
-bool DHCamera::OpenCamera(const std::string &serial_number) {
+bool DHCamera::OpenCamera(const std::string &serial_number, const std::string &config_file) {
     // Will NOT check stream status for restart.
     // if (stream_running_) return false;
     if (device_ != nullptr) return false;
@@ -50,18 +50,6 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
 
     serial_number_ = serial_number;
 
-    // Check if it's factory setting can be read.
-    if (GetVendorName().empty() ||
-        GetModelName().empty() ||
-        serial_number_.empty() ||
-        GetDeviceVersion().empty()) {
-        status_code = GXCloseDevice(device_);
-        if (status_code != GX_STATUS_SUCCESS)
-            LOG(ERROR) << GetErrorInfo(status_code);
-        device_ = nullptr;
-        return false;
-    }
-
     // Check if it's mono or color camera.
     bool has_color_filter = false;
     status_code = GXIsImplemented(device_,
@@ -72,7 +60,16 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
     // Mono cameras are NOT supported.
     if (!has_color_filter) {
         LOG(ERROR) << "{!}{Mono cameras are NOT supported}";
+        status_code = GXCloseDevice(device_);
+        if (status_code != GX_STATUS_SUCCESS)
+            LOG(ERROR) << GetErrorInfo(status_code);
         device_ = nullptr;
+        serial_number_ = "";
+        if (!camera_count_) {
+            status_code = GXCloseLib();
+            if (status_code != GX_STATUS_SUCCESS)
+                LOG(ERROR) << GetErrorInfo(status_code);
+        }
         return false;
     } else {
         status_code = GXGetEnum(device_,
@@ -87,56 +84,20 @@ bool DHCamera::OpenCamera(const std::string &serial_number) {
                            &payload_size_);
     GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
-    // Set acquisition mode to continuous.
-    status_code = GXSetEnum(device_,
-                            GX_ENUM_ACQUISITION_MODE,
-                            GX_ACQ_MODE_CONTINUOUS);
-    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
-
-    // Turn off the trigger.
-    status_code = GXSetEnum(device_,
-                            GX_ENUM_TRIGGER_MODE,
-                            GX_TRIGGER_MODE_OFF);
-    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
-
-    // Set buffer number.
-    uint64_t buffer_num = GX_ACQ_BUFFER_NUM;
-    status_code = GXSetAcqusitionBufferNumber(device_,
-                                              buffer_num);
-    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
-
-    // Set stream transfer size.
-    bool stream_transfer_size = false;
-    status_code = GXIsImplemented(device_,
-                                  GX_DS_INT_STREAM_TRANSFER_SIZE,
-                                  &stream_transfer_size);
-    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
-
-    if (stream_transfer_size) {
-        status_code = GXSetInt(device_,
-                               GX_DS_INT_STREAM_TRANSFER_SIZE,
-                               GX_ACQ_TRANSFER_SIZE);
-        GX_OPEN_CAMERA_CHECK_STATUS(status_code)
+    // Load configurations.
+    if (!ImportConfigurationFile(config_file)) {
+        status_code = GXCloseDevice(device_);
+        if (status_code != GX_STATUS_SUCCESS)
+            LOG(ERROR) << GetErrorInfo(status_code);
+        device_ = nullptr;
+        serial_number_ = "";
+        if (!camera_count_) {
+            status_code = GXCloseLib();
+            if (status_code != GX_STATUS_SUCCESS)
+                LOG(ERROR) << GetErrorInfo(status_code);
+        }
+        return false;
     }
-
-    bool stream_transfer_number_urb = false;
-    status_code = GXIsImplemented(device_,
-                                  GX_DS_INT_STREAM_TRANSFER_NUMBER_URB,
-                                  &stream_transfer_number_urb);
-    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
-
-    if (stream_transfer_number_urb) {
-        status_code = GXSetInt(device_,
-                               GX_DS_INT_STREAM_TRANSFER_NUMBER_URB,
-                               GX_ACQ_TRANSFER_NUMBER_URB);
-        GX_OPEN_CAMERA_CHECK_STATUS(status_code)
-    }
-
-    // White balance AUTO.
-    status_code = GXSetEnum(device_,
-                            GX_ENUM_BALANCE_WHITE_AUTO,
-                            GX_BALANCE_WHITE_AUTO_CONTINUOUS);
-    GX_OPEN_CAMERA_CHECK_STATUS(status_code)
 
     // device_ will not be nullptr until camera is closed, so camera_count_ plus 1.
     ++camera_count_;
@@ -197,11 +158,12 @@ bool DHCamera::CloseCamera() {
         }
     }
 
+    LOG(INFO) << "Closed camera " << serial_number_ << ".";
+
     // Reset camera parameters.
     color_filter_ = GX_COLOR_FILTER_NONE;
     payload_size_ = 0;
     serial_number_ = "";
-    LOG(INFO) << "Closed camera " << serial_number_ << ".";
     return true;
 }
 
@@ -412,12 +374,8 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                 GXCloseLib();
 
             // Try reopening camera once per second, errors will be shown.
-            while (!self->OpenCamera(self->serial_number_)) {
+            while (!self->OpenCamera(self->serial_number_, "../cache/" + self->serial_number_ + ".txt"))
                 sleep(1);
-            }
-
-            // Reset parameters.
-            self->ImportConfigurationFile("../cache/" + self->serial_number_ + ".txt");
 
             // Restart Stream.
             if (self->stream_running_) {
@@ -439,6 +397,7 @@ void *DHCamera::DaemonThreadFunction(void *p) {
                     self->stream_running_ = false;
                 }
             }
+
             LOG(INFO) << self->serial_number_ << " is successfully reconnected.";
         }
     }

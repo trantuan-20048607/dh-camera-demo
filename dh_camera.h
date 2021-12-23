@@ -91,7 +91,7 @@ public:
      * \param serial_number Serial number of the camera you wanna open.
      * \return A boolean shows whether the camera is successfully opened.
      */
-    bool OpenCamera(const std::string &serial_number);
+    bool OpenCamera(const std::string &serial_number, const std::string &config_file);
 
     /**
      * \brief Close the opened camera.
@@ -125,7 +125,7 @@ public:
 
     /**
      * \brief Get an image from internal image buffer.
-     * \param [out]image Acquired image will be stored here.
+     * \param [out] image Acquired image will be stored here.
      * \return A boolean shows if buffer is not empty, or if you can successfully get an image.
      */
     bool GetImage(cv::Mat &);
