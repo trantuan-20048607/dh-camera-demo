@@ -15,6 +15,7 @@ private:
     unsigned int head_;
     unsigned int tail_;
     std::mutex lock_[len];
+    std::mutex head_lock_;
     const unsigned int and_to_mod_ = len - 1;
 
 public:
@@ -38,13 +39,13 @@ public:
     }
 
     inline void Push(const Type &obj) {
-        std::lock_guard<std::mutex> lock_tail(lock_[tail_]);
+        std::lock_guard<std::mutex> lock(lock_[tail_]);
         data_[tail_] = obj;
         ++tail_;
         tail_ &= and_to_mod_;
 
         if (head_ == tail_) {
-            std::lock_guard<std::mutex> lock_head(lock_[head_]);
+            std::lock_guard<std::mutex> head_lock(head_lock_);
             ++head_;
             head_ &= and_to_mod_;
         }
@@ -53,8 +54,9 @@ public:
     inline bool Pop(Type &obj) {
         if (head_ == tail_)
             return false;
-        std::lock_guard<std::mutex> lock_head(lock_[head_]);
+        std::lock_guard<std::mutex> lock(lock_[head_]);
         obj = data_[head_];
+        std::lock_guard<std::mutex> head_lock(head_lock_);
         ++head_;
         head_ &= and_to_mod_;
         return true;
