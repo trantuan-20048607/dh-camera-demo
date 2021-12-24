@@ -8,7 +8,7 @@
 #include "GxIAPI.h"
 #include "DxImageProc.h"
 
-#include "log/easylogging++.h"
+#include "easylogging++/easylogging++.h"
 #include "buffer.h"
 
 /**

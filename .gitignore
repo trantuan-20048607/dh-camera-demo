@@ -140,3 +140,7 @@ _deps
 ### Cache
 cache
 !cache/.keep
+
+### Log
+log
+!log/.keep

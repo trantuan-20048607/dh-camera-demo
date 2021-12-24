@@ -6,7 +6,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "log/easylogging++.h"
+#include "easylogging++/easylogging++.h"
 #include "dh_camera.h"
 
 int main() {
@@ -25,7 +25,7 @@ int main() {
     uint32_t frame_count = 0;
     uint32_t last_second_frame_cont = 0;
     time_t start_time = time(nullptr), end_time;
-    for (uint32_t fps = 0; cv::waitKey(2) != 'q'; ++frame_count) {
+    for (uint32_t fps = 0; cv::waitKey(1) != 'q'; ++frame_count) {
         if (!cam.GetImage(img)) {
             --frame_count;
             continue;

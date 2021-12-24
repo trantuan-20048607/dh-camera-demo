@@ -94,7 +94,7 @@ namespace el {
             static const char* kDefaultLogFile                         =      "nul";
 #  endif  // ELPP_OS_UNIX
 #elif defined(ELPP_DEFAULT_LOG_FILE)
-            static const char* kDefaultLogFile                         =      ELPP_DEFAULT_LOG_FILE;
+            static const char *kDefaultLogFile = ELPP_DEFAULT_LOG_FILE;
 #else
             static const char *kDefaultLogFile = "myeasylog.log";
 #endif // defined(ELPP_NO_DEFAULT_LOG_FILE)
@@ -2114,15 +2114,16 @@ namespace el {
 
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
             // Register performance logger and reconfigure format
-            Logger* performanceLogger = m_registeredLoggers->get(std::string(base::consts::kPerformanceLoggerId));
+            Logger *performanceLogger = m_registeredLoggers->get(std::string(base::consts::kPerformanceLoggerId));
             m_registeredLoggers->get("performance");
-            performanceLogger->configurations()->setGlobally(ConfigurationType::Format, std::string("%datetime %level %msg"));
+            performanceLogger->configurations()->setGlobally(ConfigurationType::Format,
+                                                             std::string("%datetime %level %msg"));
             performanceLogger->reconfigure();
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
 
 #if defined(ELPP_SYSLOG)
             // Register syslog logger and reconfigure format
-            Logger* sysLogLogger = m_registeredLoggers->get(std::string(base::consts::kSysLogLoggerId));
+            Logger *sysLogLogger = m_registeredLoggers->get(std::string(base::consts::kSysLogLoggerId));
             sysLogLogger->configurations()->setGlobally(ConfigurationType::Format, std::string("%level: %msg"));
             sysLogLogger->reconfigure();
 #endif //  defined(ELPP_SYSLOG)
@@ -2134,7 +2135,7 @@ namespace el {
 #endif  // ELPP_ASYNC_LOGGING
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
             installPerformanceTrackingCallback<base::DefaultPerformanceTrackingCallback>
-            (std::string("DefaultPerformanceTrackingCallback"));
+                    (std::string("DefaultPerformanceTrackingCallback"));
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
             ELPP_INTERNAL_INFO(1, "Easylogging++ has been initialized");
 #if ELPP_ASYNC_LOGGING
@@ -2295,26 +2296,26 @@ namespace el {
             }
 #if defined(ELPP_SYSLOG)
             else if (m_data->dispatchAction() == base::DispatchAction::SysLog) {
-              // Determine syslog priority
-              int sysLogPriority = 0;
-              if (m_data->logMessage()->level() == Level::Fatal)
-                sysLogPriority = LOG_EMERG;
-              else if (m_data->logMessage()->level() == Level::Error)
-                sysLogPriority = LOG_ERR;
-              else if (m_data->logMessage()->level() == Level::Warning)
-                sysLogPriority = LOG_WARNING;
-              else if (m_data->logMessage()->level() == Level::Info)
-                sysLogPriority = LOG_INFO;
-              else if (m_data->logMessage()->level() == Level::Debug)
-                sysLogPriority = LOG_DEBUG;
-              else
-                sysLogPriority = LOG_NOTICE;
+                // Determine syslog priority
+                int sysLogPriority = 0;
+                if (m_data->logMessage()->level() == Level::Fatal)
+                    sysLogPriority = LOG_EMERG;
+                else if (m_data->logMessage()->level() == Level::Error)
+                    sysLogPriority = LOG_ERR;
+                else if (m_data->logMessage()->level() == Level::Warning)
+                    sysLogPriority = LOG_WARNING;
+                else if (m_data->logMessage()->level() == Level::Info)
+                    sysLogPriority = LOG_INFO;
+                else if (m_data->logMessage()->level() == Level::Debug)
+                    sysLogPriority = LOG_DEBUG;
+                else
+                    sysLogPriority = LOG_NOTICE;
 #  if defined(ELPP_UNICODE)
-              char* line = base::utils::Str::wcharPtrToCharPtr(logLine.c_str());
-              syslog(sysLogPriority, "%s", line);
-              free(line);
+                char *line = base::utils::Str::wcharPtrToCharPtr(logLine.c_str());
+                syslog(sysLogPriority, "%s", line);
+                free(line);
 #  else
-              syslog(sysLogPriority, "%s", logLine.c_str());
+                syslog(sysLogPriority, "%s", logLine.c_str());
 #  endif
             }
 #endif  // defined(ELPP_SYSLOG)
@@ -2736,89 +2737,93 @@ namespace el {
 
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
 
-        PerformanceTracker::PerformanceTracker(const std::string& blockName,
+        PerformanceTracker::PerformanceTracker(const std::string &blockName,
                                                base::TimestampUnit timestampUnit,
-                                               const std::string& loggerId,
+                                               const std::string &loggerId,
                                                bool scopedLog, Level level) :
-          m_blockName(blockName), m_timestampUnit(timestampUnit), m_loggerId(loggerId), m_scopedLog(scopedLog),
-          m_level(level), m_hasChecked(false), m_lastCheckpointId(std::string()), m_enabled(false) {
+                m_blockName(blockName), m_timestampUnit(timestampUnit), m_loggerId(loggerId), m_scopedLog(scopedLog),
+                m_level(level), m_hasChecked(false), m_lastCheckpointId(std::string()), m_enabled(false) {
 #if !defined(ELPP_DISABLE_PERFORMANCE_TRACKING) && ELPP_LOGGING_ENABLED
-          // We store it locally so that if user happen to change configuration by the end of scope
-          // or before calling checkpoint, we still depend on state of configuration at time of construction
-          el::Logger* loggerPtr = ELPP->registeredLoggers()->get(loggerId, false);
-          m_enabled = loggerPtr != nullptr && loggerPtr->m_typedConfigurations->performanceTracking(m_level);
-          if (m_enabled) {
-            base::utils::DateTime::gettimeofday(&m_startTime);
-          }
+            // We store it locally so that if user happen to change configuration by the end of scope
+            // or before calling checkpoint, we still depend on state of configuration at time of construction
+            el::Logger *loggerPtr = ELPP->registeredLoggers()->get(loggerId, false);
+            m_enabled = loggerPtr != nullptr && loggerPtr->m_typedConfigurations->performanceTracking(m_level);
+            if (m_enabled) {
+                base::utils::DateTime::gettimeofday(&m_startTime);
+            }
 #endif  // !defined(ELPP_DISABLE_PERFORMANCE_TRACKING) && ELPP_LOGGING_ENABLED
         }
 
         PerformanceTracker::~PerformanceTracker(void) {
 #if !defined(ELPP_DISABLE_PERFORMANCE_TRACKING) && ELPP_LOGGING_ENABLED
-          if (m_enabled) {
-            base::threading::ScopedLock scopedLock(lock());
-            if (m_scopedLog) {
-              base::utils::DateTime::gettimeofday(&m_endTime);
-              base::type::string_t formattedTime = getFormattedTimeTaken();
-              PerformanceTrackingData data(PerformanceTrackingData::DataType::Complete);
-              data.init(this);
-              data.m_formattedTimeTaken = formattedTime;
-              PerformanceTrackingCallback* callback = nullptr;
-              for (const std::pair<std::string, base::type::PerformanceTrackingCallbackPtr>& h
-                   : ELPP->m_performanceTrackingCallbacks) {
-                callback = h.second.get();
-                if (callback != nullptr && callback->enabled()) {
-                  callback->handle(&data);
+            if (m_enabled) {
+                base::threading::ScopedLock scopedLock(lock());
+                if (m_scopedLog) {
+                    base::utils::DateTime::gettimeofday(&m_endTime);
+                    base::type::string_t formattedTime = getFormattedTimeTaken();
+                    PerformanceTrackingData data(PerformanceTrackingData::DataType::Complete);
+                    data.init(this);
+                    data.m_formattedTimeTaken = formattedTime;
+                    PerformanceTrackingCallback *callback = nullptr;
+                    for (const std::pair<std::string, base::type::PerformanceTrackingCallbackPtr> &h
+                            : ELPP->m_performanceTrackingCallbacks) {
+                        callback = h.second.get();
+                        if (callback != nullptr && callback->enabled()) {
+                            callback->handle(&data);
+                        }
+                    }
                 }
-              }
             }
-          }
 #endif  // !defined(ELPP_DISABLE_PERFORMANCE_TRACKING)
         }
 
-        void PerformanceTracker::checkpoint(const std::string& id, const char* file, base::type::LineNumber line,
-                                            const char* func) {
+        void PerformanceTracker::checkpoint(const std::string &id, const char *file, base::type::LineNumber line,
+                                            const char *func) {
 #if !defined(ELPP_DISABLE_PERFORMANCE_TRACKING) && ELPP_LOGGING_ENABLED
-          if (m_enabled) {
-            base::threading::ScopedLock scopedLock(lock());
-            base::utils::DateTime::gettimeofday(&m_endTime);
-            base::type::string_t formattedTime = m_hasChecked ? getFormattedTimeTaken(m_lastCheckpointTime) : ELPP_LITERAL("");
-            PerformanceTrackingData data(PerformanceTrackingData::DataType::Checkpoint);
-            data.init(this);
-            data.m_checkpointId = id;
-            data.m_file = file;
-            data.m_line = line;
-            data.m_func = func;
-            data.m_formattedTimeTaken = formattedTime;
-            PerformanceTrackingCallback* callback = nullptr;
-            for (const std::pair<std::string, base::type::PerformanceTrackingCallbackPtr>& h
-                 : ELPP->m_performanceTrackingCallbacks) {
-              callback = h.second.get();
-              if (callback != nullptr && callback->enabled()) {
-                callback->handle(&data);
-              }
+            if (m_enabled) {
+                base::threading::ScopedLock scopedLock(lock());
+                base::utils::DateTime::gettimeofday(&m_endTime);
+                base::type::string_t formattedTime = m_hasChecked ? getFormattedTimeTaken(m_lastCheckpointTime)
+                                                                  : ELPP_LITERAL("");
+                PerformanceTrackingData data(PerformanceTrackingData::DataType::Checkpoint);
+                data.init(this);
+                data.m_checkpointId = id;
+                data.m_file = file;
+                data.m_line = line;
+                data.m_func = func;
+                data.m_formattedTimeTaken = formattedTime;
+                PerformanceTrackingCallback *callback = nullptr;
+                for (const std::pair<std::string, base::type::PerformanceTrackingCallbackPtr> &h
+                        : ELPP->m_performanceTrackingCallbacks) {
+                    callback = h.second.get();
+                    if (callback != nullptr && callback->enabled()) {
+                        callback->handle(&data);
+                    }
+                }
+                base::utils::DateTime::gettimeofday(&m_lastCheckpointTime);
+                m_hasChecked = true;
+                m_lastCheckpointId = id;
             }
-            base::utils::DateTime::gettimeofday(&m_lastCheckpointTime);
-            m_hasChecked = true;
-            m_lastCheckpointId = id;
-          }
 #endif  // !defined(ELPP_DISABLE_PERFORMANCE_TRACKING) && ELPP_LOGGING_ENABLED
-          ELPP_UNUSED(id);
-          ELPP_UNUSED(file);
-          ELPP_UNUSED(line);
-          ELPP_UNUSED(func);
+            ELPP_UNUSED(id);
+            ELPP_UNUSED(file);
+            ELPP_UNUSED(line);
+            ELPP_UNUSED(func);
         }
 
         const base::type::string_t PerformanceTracker::getFormattedTimeTaken(struct timeval startTime) const {
-          if (ELPP->hasFlag(LoggingFlag::FixedTimeFormat)) {
-            base::type::stringstream_t ss;
-            ss << base::utils::DateTime::getTimeDifference(m_endTime,
-                startTime, m_timestampUnit) << " " << base::consts::kTimeFormats[static_cast<base::type::EnumType>
-                    (m_timestampUnit)].unit;
-            return ss.str();
-          }
-          return base::utils::DateTime::formatTime(base::utils::DateTime::getTimeDifference(m_endTime,
-                 startTime, m_timestampUnit), m_timestampUnit);
+            if (ELPP->hasFlag(LoggingFlag::FixedTimeFormat)) {
+                base::type::stringstream_t ss;
+                ss << base::utils::DateTime::getTimeDifference(m_endTime,
+                                                               startTime, m_timestampUnit) << " "
+                   << base::consts::kTimeFormats[static_cast<base::type::EnumType>
+                   (m_timestampUnit)].unit;
+                return ss.str();
+            }
+            return base::utils::DateTime::formatTime(base::utils::DateTime::getTimeDifference(m_endTime,
+                                                                                              startTime,
+                                                                                              m_timestampUnit),
+                                                     m_timestampUnit);
         }
 
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
@@ -2828,151 +2833,154 @@ namespace el {
 
             // StackTrace
 
-            StackTrace::StackTraceEntry::StackTraceEntry(std::size_t index, const std::string& loc, const std::string& demang,
-                const std::string& hex,
-                const std::string& addr) :
-              m_index(index),
-              m_location(loc),
-              m_demangled(demang),
-              m_hex(hex),
-              m_addr(addr) {
+            StackTrace::StackTraceEntry::StackTraceEntry(std::size_t index, const std::string &loc,
+                                                         const std::string &demang,
+                                                         const std::string &hex,
+                                                         const std::string &addr) :
+                    m_index(index),
+                    m_location(loc),
+                    m_demangled(demang),
+                    m_hex(hex),
+                    m_addr(addr) {
             }
 
-            std::ostream& operator<<(std::ostream& ss, const StackTrace::StackTraceEntry& si) {
-              ss << "[" << si.m_index << "] " << si.m_location << (si.m_hex.empty() ? "" : "+") << si.m_hex << " " << si.m_addr <<
-                 (si.m_demangled.empty() ? "" : ":") << si.m_demangled;
-              return ss;
+            std::ostream &operator<<(std::ostream &ss, const StackTrace::StackTraceEntry &si) {
+                ss << "[" << si.m_index << "] " << si.m_location << (si.m_hex.empty() ? "" : "+") << si.m_hex << " "
+                   << si.m_addr <<
+                   (si.m_demangled.empty() ? "" : ":") << si.m_demangled;
+                return ss;
             }
 
-            std::ostream& operator<<(std::ostream& os, const StackTrace& st) {
-              std::vector<StackTrace::StackTraceEntry>::const_iterator it = st.m_stack.begin();
-              while (it != st.m_stack.end()) {
-                os << "    " << *it++ << "\n";
-              }
-              return os;
+            std::ostream &operator<<(std::ostream &os, const StackTrace &st) {
+                std::vector<StackTrace::StackTraceEntry>::const_iterator it = st.m_stack.begin();
+                while (it != st.m_stack.end()) {
+                    os << "    " << *it++ << "\n";
+                }
+                return os;
             }
 
             void StackTrace::generateNew(void) {
 #ifdef HAVE_EXECINFO
-              m_stack.clear();
-              void* stack[kMaxStack];
-              unsigned int size = backtrace(stack, kMaxStack);
-              char** strings = backtrace_symbols(stack, size);
-              if (size > kStackStart) {  // Skip StackTrace c'tor and generateNew
-                for (std::size_t i = kStackStart; i < size; ++i) {
-                  std::string mangName;
-                  std::string location;
-                  std::string hex;
-                  std::string addr;
+                m_stack.clear();
+                void* stack[kMaxStack];
+                unsigned int size = backtrace(stack, kMaxStack);
+                char** strings = backtrace_symbols(stack, size);
+                if (size > kStackStart) {  // Skip StackTrace c'tor and generateNew
+                  for (std::size_t i = kStackStart; i < size; ++i) {
+                    std::string mangName;
+                    std::string location;
+                    std::string hex;
+                    std::string addr;
 
-                  // entry: 2   crash.cpp.bin                       0x0000000101552be5 _ZN2el4base5debug10StackTraceC1Ev + 21
-                  const std::string line(strings[i]);
-                  auto p = line.find("_");
-                  if (p != std::string::npos) {
-                    mangName = line.substr(p);
-                    mangName = mangName.substr(0, mangName.find(" +"));
-                  }
-                  p = line.find("0x");
-                  if (p != std::string::npos) {
-                    addr = line.substr(p);
-                    addr = addr.substr(0, addr.find("_"));
-                  }
-                  // Perform demangling if parsed properly
-                  if (!mangName.empty()) {
-                    int status = 0;
-                    char* demangName = abi::__cxa_demangle(mangName.data(), 0, 0, &status);
-                    // if demangling is successful, output the demangled function name
-                    if (status == 0) {
-                      // Success (see http://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a01696.html)
-                      StackTraceEntry entry(i - 1, location, demangName, hex, addr);
-                      m_stack.push_back(entry);
+                    // entry: 2   crash.cpp.bin                       0x0000000101552be5 _ZN2el4base5debug10StackTraceC1Ev + 21
+                    const std::string line(strings[i]);
+                    auto p = line.find("_");
+                    if (p != std::string::npos) {
+                      mangName = line.substr(p);
+                      mangName = mangName.substr(0, mangName.find(" +"));
+                    }
+                    p = line.find("0x");
+                    if (p != std::string::npos) {
+                      addr = line.substr(p);
+                      addr = addr.substr(0, addr.find("_"));
+                    }
+                    // Perform demangling if parsed properly
+                    if (!mangName.empty()) {
+                      int status = 0;
+                      char* demangName = abi::__cxa_demangle(mangName.data(), 0, 0, &status);
+                      // if demangling is successful, output the demangled function name
+                      if (status == 0) {
+                        // Success (see http://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a01696.html)
+                        StackTraceEntry entry(i - 1, location, demangName, hex, addr);
+                        m_stack.push_back(entry);
+                      } else {
+                        // Not successful - we will use mangled name
+                        StackTraceEntry entry(i - 1, location, mangName, hex, addr);
+                        m_stack.push_back(entry);
+                      }
+                      free(demangName);
                     } else {
-                      // Not successful - we will use mangled name
-                      StackTraceEntry entry(i - 1, location, mangName, hex, addr);
+                      StackTraceEntry entry(i - 1, line);
                       m_stack.push_back(entry);
                     }
-                    free(demangName);
-                  } else {
-                    StackTraceEntry entry(i - 1, line);
-                    m_stack.push_back(entry);
                   }
                 }
-              }
-              free(strings);
+                free(strings);
 #else
-              ELPP_INTERNAL_INFO(1, "Stacktrace generation not supported for selected compiler");
+                ELPP_INTERNAL_INFO(1, "Stacktrace generation not supported for selected compiler");
 #endif  // ELPP_STACKTRACE
             }
 
             // Static helper functions
 
             static std::string crashReason(int sig) {
-              std::stringstream ss;
-              bool foundReason = false;
-              for (int i = 0; i < base::consts::kCrashSignalsCount; ++i) {
-                if (base::consts::kCrashSignals[i].numb == sig) {
-                  ss << "Application has crashed due to [" << base::consts::kCrashSignals[i].name << "] signal";
-                  if (ELPP->hasFlag(el::LoggingFlag::LogDetailedCrashReason)) {
-                    ss << std::endl <<
-                       "    " << base::consts::kCrashSignals[i].brief << std::endl <<
-                       "    " << base::consts::kCrashSignals[i].detail;
-                  }
-                  foundReason = true;
+                std::stringstream ss;
+                bool foundReason = false;
+                for (int i = 0; i < base::consts::kCrashSignalsCount; ++i) {
+                    if (base::consts::kCrashSignals[i].numb == sig) {
+                        ss << "Application has crashed due to [" << base::consts::kCrashSignals[i].name << "] signal";
+                        if (ELPP->hasFlag(el::LoggingFlag::LogDetailedCrashReason)) {
+                            ss << std::endl <<
+                               "    " << base::consts::kCrashSignals[i].brief << std::endl <<
+                               "    " << base::consts::kCrashSignals[i].detail;
+                        }
+                        foundReason = true;
+                    }
                 }
-              }
-              if (!foundReason) {
-                ss << "Application has crashed due to unknown signal [" << sig << "]";
-              }
-              return ss.str();
+                if (!foundReason) {
+                    ss << "Application has crashed due to unknown signal [" << sig << "]";
+                }
+                return ss.str();
             }
+
             /// @brief Logs reason of crash from sig
-            static void logCrashReason(int sig, bool stackTraceIfAvailable, Level level, const char* logger) {
-              if (sig == SIGINT && ELPP->hasFlag(el::LoggingFlag::IgnoreSigInt)) {
-                return;
-              }
-              std::stringstream ss;
-              ss << "CRASH HANDLED; ";
-              ss << crashReason(sig);
+            static void logCrashReason(int sig, bool stackTraceIfAvailable, Level level, const char *logger) {
+                if (sig == SIGINT && ELPP->hasFlag(el::LoggingFlag::IgnoreSigInt)) {
+                    return;
+                }
+                std::stringstream ss;
+                ss << "CRASH HANDLED; ";
+                ss << crashReason(sig);
 #if ELPP_STACKTRACE
-              if (stackTraceIfAvailable) {
-                ss << std::endl << "    ======= Backtrace: =========" << std::endl << base::debug::StackTrace();
-              }
+                if (stackTraceIfAvailable) {
+                    ss << std::endl << "    ======= Backtrace: =========" << std::endl << base::debug::StackTrace();
+                }
 #else
-              ELPP_UNUSED(stackTraceIfAvailable);
+                    ELPP_UNUSED(stackTraceIfAvailable);
 #endif  // ELPP_STACKTRACE
-              ELPP_WRITE_LOG(el::base::Writer, level, base::DispatchAction::NormalLog, logger) << ss.str();
+                ELPP_WRITE_LOG(el::base::Writer, level, base::DispatchAction::NormalLog, logger) << ss.str();
             }
 
             static inline void crashAbort(int sig) {
-              base::utils::abort(sig, std::string());
+                base::utils::abort(sig, std::string());
             }
 
             /// @brief Default application crash handler
             ///
             /// @detail This function writes log using 'default' logger, prints stack trace for GCC based compilers and aborts program.
             static inline void defaultCrashHandler(int sig) {
-              base::debug::logCrashReason(sig, true, Level::Fatal, base::consts::kDefaultLoggerId);
-              base::debug::crashAbort(sig);
+                base::debug::logCrashReason(sig, true, Level::Fatal, base::consts::kDefaultLoggerId);
+                base::debug::crashAbort(sig);
             }
 
             // CrashHandler
 
             CrashHandler::CrashHandler(bool useDefault) {
-              if (useDefault) {
-                setHandler(defaultCrashHandler);
-              }
+                if (useDefault) {
+                    setHandler(defaultCrashHandler);
+                }
             }
 
-            void CrashHandler::setHandler(const Handler& cHandler) {
-              m_handler = cHandler;
+            void CrashHandler::setHandler(const Handler &cHandler) {
+                m_handler = cHandler;
 #if defined(ELPP_HANDLE_SIGABRT)
-              int i = 0;  // SIGABRT is at base::consts::kCrashSignals[0]
+                int i = 0;  // SIGABRT is at base::consts::kCrashSignals[0]
 #else
-              int i = 1;
+                int i = 1;
 #endif  // defined(ELPP_HANDLE_SIGABRT)
-              for (; i < base::consts::kCrashSignalsCount; ++i) {
-                m_handler = signal(base::consts::kCrashSignals[i].numb, cHandler);
-              }
+                for (; i < base::consts::kCrashSignalsCount; ++i) {
+                    m_handler = signal(base::consts::kCrashSignals[i].numb, cHandler);
+                }
             }
 
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_CRASH_LOG)
@@ -2985,22 +2993,22 @@ namespace el {
 
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_CRASH_LOG)
 
-    void Helpers::crashAbort(int sig, const char* sourceFile, unsigned int long line) {
-      std::stringstream ss;
-      ss << base::debug::crashReason(sig).c_str();
-      ss << " - [Called el::Helpers::crashAbort(" << sig << ")]";
-      if (sourceFile != nullptr && strlen(sourceFile) > 0) {
-        ss << " - Source: " << sourceFile;
-        if (line > 0)
-          ss << ":" << line;
-        else
-          ss << " (line number not specified)";
-      }
-      base::utils::abort(sig, ss.str());
+    void Helpers::crashAbort(int sig, const char *sourceFile, unsigned int long line) {
+        std::stringstream ss;
+        ss << base::debug::crashReason(sig).c_str();
+        ss << " - [Called el::Helpers::crashAbort(" << sig << ")]";
+        if (sourceFile != nullptr && strlen(sourceFile) > 0) {
+            ss << " - Source: " << sourceFile;
+            if (line > 0)
+                ss << ":" << line;
+            else
+                ss << " (line number not specified)";
+        }
+        base::utils::abort(sig, ss.str());
     }
 
-    void Helpers::logCrashReason(int sig, bool stackTraceIfAvailable, Level level, const char* logger) {
-      el::base::debug::logCrashReason(sig, stackTraceIfAvailable, level, logger);
+    void Helpers::logCrashReason(int sig, bool stackTraceIfAvailable, Level level, const char *logger) {
+        el::base::debug::logCrashReason(sig, stackTraceIfAvailable, level, logger);
     }
 
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_CRASH_LOG)

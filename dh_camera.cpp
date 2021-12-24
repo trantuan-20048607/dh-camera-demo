@@ -10,7 +10,7 @@
 #include "DxImageProc.h"
 
 #include "dh_camera.h"
-#include "log/easylogging++.h"
+#include "easylogging++/easylogging++.h"
 
 unsigned int DHCamera::camera_count_ = 0;
 

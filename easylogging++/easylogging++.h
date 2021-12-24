@@ -157,7 +157,7 @@
 // Internal Assertions and errors
 #if !defined(ELPP_DISABLE_ASSERT)
 #  if (defined(ELPP_DEBUG_ASSERT_FAILURE))
-                                                                                                                        #    define ELPP_ASSERT(expr, msg) if (!(expr)) { \
+#    define ELPP_ASSERT(expr, msg) if (!(expr)) { \
 std::stringstream internalInfoStream; internalInfoStream << msg; \
 ELPP_INTERNAL_DEBUGGING_OUT_ERROR \
 << "EASYLOGGING++ ASSERTION FAILED (LINE: " << __LINE__ << ") [" #expr << "] WITH MESSAGE \"" \
@@ -183,7 +183,7 @@ ELPP_INTERNAL_DEBUGGING_OUT_ERROR << ": " << buff << " [" << errno << "]";} (voi
 ELPP_INTERNAL_DEBUGGING_OUT_ERROR << ": " << strerror(errno) << " [" << errno << "]"; (void)0
 #endif  // ELPP_COMPILER_MSVC
 #if defined(ELPP_DEBUG_ERRORS)
-                                                                                                                        #  if !defined(ELPP_INTERNAL_ERROR)
+#  if !defined(ELPP_INTERNAL_ERROR)
 #    define ELPP_INTERNAL_ERROR(msg, pe) { \
 std::stringstream internalInfoStream; internalInfoStream << "<ERROR> " << msg; \
 ELPP_INTERNAL_DEBUGGING_OUT_ERROR \
@@ -210,7 +210,7 @@ ELPP_INTERNAL_DEBUGGING_OUT_INFO << ELPP_INTERNAL_DEBUGGING_MSG(internalInfoStre
 #  define ELPP_INTERNAL_INFO(lvl, msg)
 #endif  // (defined(ELPP_DEBUG_INFO))
 #if (defined(ELPP_FEATURE_ALL)) || (defined(ELPP_FEATURE_CRASH_LOG))
-                                                                                                                        #  if (ELPP_COMPILER_GCC && !ELPP_MINGW && !ELPP_CYGWIN && !ELPP_OS_ANDROID && !ELPP_OS_EMSCRIPTEN && !ELPP_OS_QNX)
+#  if (ELPP_COMPILER_GCC && !ELPP_MINGW && !ELPP_CYGWIN && !ELPP_OS_ANDROID && !ELPP_OS_EMSCRIPTEN && !ELPP_OS_QNX)
 #    define ELPP_STACKTRACE 1
 #  else
 #      if ELPP_COMPILER_MSVC
@@ -349,7 +349,9 @@ ELPP_INTERNAL_DEBUGGING_OUT_INFO << ELPP_INTERNAL_DEBUGGING_MSG(internalInfoStre
 #endif  // (!(ELPP_CXX0X || ELPP_CXX11))
 // Headers
 #if defined(ELPP_SYSLOG)
+
 #   include <syslog.h>
+
 #endif  // defined(ELPP_SYSLOG)
 
 #include <ctime>
@@ -427,13 +429,14 @@ ELPP_INTERNAL_DEBUGGING_OUT_INFO << ELPP_INTERNAL_DEBUGGING_MSG(internalInfoStre
 #   include <condition_variable>
 #endif  // ELPP_ASYNC_LOGGING
 #if defined(ELPP_STL_LOGGING)
-                                                                                                                        // For logging STL based templates
+// For logging STL based templates
 #   include <list>
 #   include <queue>
 #   include <deque>
 #   include <set>
 #   include <bitset>
 #   include <stack>
+
 #  if defined(ELPP_LOG_STD_ARRAY)
 #      include <array>
 #  endif  // defined(ELPP_LOG_STD_ARRAY)
@@ -795,15 +798,15 @@ namespace el {
 #endif
 
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
-                                                                                                                                    #ifdef ELPP_DEFAULT_PERFORMANCE_LOGGER
-static const char* kPerformanceLoggerId                    =      ELPP_DEFAULT_PERFORMANCE_LOGGER;
+#ifdef ELPP_DEFAULT_PERFORMANCE_LOGGER
+            static const char* kPerformanceLoggerId                    =      ELPP_DEFAULT_PERFORMANCE_LOGGER;
 #else
-static const char* kPerformanceLoggerId                    =      "performance";
+            static const char *kPerformanceLoggerId = "performance";
 #endif // ELPP_DEFAULT_PERFORMANCE_LOGGER
 #endif
 
 #if defined(ELPP_SYSLOG)
-            static const char* kSysLogLoggerId                         =      "syslog";
+            static const char *kSysLogLoggerId = "syslog";
 #endif  // defined(ELPP_SYSLOG)
 
 #if ELPP_OS_WINDOWS
@@ -1443,7 +1446,7 @@ static const char* kPerformanceLoggerId                    =      "performance";
                     return m_list.empty();
                 }
 
-                /// @return Size of repository
+                /// @return Load of repository
                 virtual inline std::size_t size(void) const ELPP_FINAL {
                     return m_list.size();
                 }
@@ -2895,22 +2898,25 @@ class IWorker {
             }
 
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
-                                                                                                                                    template <typename T>
-  inline bool installPerformanceTrackingCallback(const std::string& id) {
-    return base::utils::Utils::installCallback<T, base::type::PerformanceTrackingCallbackPtr>(id,
-           &m_performanceTrackingCallbacks);
-  }
 
-  template <typename T>
-  inline void uninstallPerformanceTrackingCallback(const std::string& id) {
-    base::utils::Utils::uninstallCallback<T, base::type::PerformanceTrackingCallbackPtr>(id,
-        &m_performanceTrackingCallbacks);
-  }
+            template<typename T>
+            inline bool installPerformanceTrackingCallback(const std::string &id) {
+                return base::utils::Utils::installCallback<T, base::type::PerformanceTrackingCallbackPtr>(id,
+                                                                                                          &m_performanceTrackingCallbacks);
+            }
 
-  template <typename T>
-  inline T* performanceTrackingCallback(const std::string& id) {
-    return base::utils::Utils::callback<T, base::type::PerformanceTrackingCallbackPtr>(id, &m_performanceTrackingCallbacks);
-  }
+            template<typename T>
+            inline void uninstallPerformanceTrackingCallback(const std::string &id) {
+                base::utils::Utils::uninstallCallback<T, base::type::PerformanceTrackingCallbackPtr>(id,
+                                                                                                     &m_performanceTrackingCallbacks);
+            }
+
+            template<typename T>
+            inline T *performanceTrackingCallback(const std::string &id) {
+                return base::utils::Utils::callback<T, base::type::PerformanceTrackingCallbackPtr>(id,
+                                                                                                   &m_performanceTrackingCallbacks);
+            }
+
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
 
             /// @brief Sets thread name for current thread. Requires std::thread
@@ -3037,80 +3043,91 @@ class AsyncDispatchWorker : public base::IWorker, public base::threading::Thread
         };
 
 #if defined(ELPP_STL_LOGGING)
-                                                                                                                                /// @brief Workarounds to write some STL logs
+        /// @brief Workarounds to write some STL logs
 ///
 /// @detail There is workaround needed to loop through some stl containers. In order to do that, we need iterable containers
 /// of same type and provide iterator interface and pass it on to writeIterator().
 /// Remember, this is passed by value in constructor so that we dont change original containers.
 /// This operation is as expensive as Big-O(std::min(class_.size(), base::consts::kMaxLogPerContainer))
-namespace workarounds {
+        namespace workarounds {
 /// @brief Abstract IterableContainer template that provides interface for iterable classes of type T
-template <typename T, typename Container>
-class IterableContainer {
- public:
-  typedef typename Container::iterator iterator;
-  typedef typename Container::const_iterator const_iterator;
-  IterableContainer(void) {}
-  virtual ~IterableContainer(void) {}
-  iterator begin(void) {
-    return getContainer().begin();
-  }
-  iterator end(void) {
-    return getContainer().end();
-  }
- private:
-  virtual Container& getContainer(void) = 0;
-};
+            template<typename T, typename Container>
+            class IterableContainer {
+            public:
+                typedef typename Container::iterator iterator;
+                typedef typename Container::const_iterator const_iterator;
+
+                IterableContainer(void) {}
+
+                virtual ~IterableContainer(void) {}
+
+                iterator begin(void) {
+                    return getContainer().begin();
+                }
+
+                iterator end(void) {
+                    return getContainer().end();
+                }
+
+            private:
+                virtual Container &getContainer(void) = 0;
+            };
+
 /// @brief Implements IterableContainer and provides iterable std::priority_queue class
-template<typename T, typename Container = std::vector<T>, typename Comparator = std::less<typename Container::value_type>>
-class IterablePriorityQueue : public IterableContainer<T, Container>,
-  public std::priority_queue<T, Container, Comparator> {
- public:
-  IterablePriorityQueue(std::priority_queue<T, Container, Comparator> queue_) {
-    std::size_t count_ = 0;
-    while (++count_ < base::consts::kMaxLogPerContainer && !queue_.empty()) {
-      this->push(queue_.top());
-      queue_.pop();
-    }
-  }
- private:
-  inline Container& getContainer(void) {
-    return this->c;
-  }
-};
+            template<typename T, typename Container = std::vector<T>, typename Comparator = std::less<typename Container::value_type>>
+            class IterablePriorityQueue : public IterableContainer<T, Container>,
+                                          public std::priority_queue<T, Container, Comparator> {
+            public:
+                IterablePriorityQueue(std::priority_queue<T, Container, Comparator> queue_) {
+                    std::size_t count_ = 0;
+                    while (++count_ < base::consts::kMaxLogPerContainer && !queue_.empty()) {
+                        this->push(queue_.top());
+                        queue_.pop();
+                    }
+                }
+
+            private:
+                inline Container &getContainer(void) {
+                    return this->c;
+                }
+            };
+
 /// @brief Implements IterableContainer and provides iterable std::queue class
-template<typename T, typename Container = std::deque<T>>
-class IterableQueue : public IterableContainer<T, Container>, public std::queue<T, Container> {
- public:
-  IterableQueue(std::queue<T, Container> queue_) {
-    std::size_t count_ = 0;
-    while (++count_ < base::consts::kMaxLogPerContainer && !queue_.empty()) {
-      this->push(queue_.front());
-      queue_.pop();
-    }
-  }
- private:
-  inline Container& getContainer(void) {
-    return this->c;
-  }
-};
+            template<typename T, typename Container = std::deque<T>>
+            class IterableQueue : public IterableContainer<T, Container>, public std::queue<T, Container> {
+            public:
+                IterableQueue(std::queue<T, Container> queue_) {
+                    std::size_t count_ = 0;
+                    while (++count_ < base::consts::kMaxLogPerContainer && !queue_.empty()) {
+                        this->push(queue_.front());
+                        queue_.pop();
+                    }
+                }
+
+            private:
+                inline Container &getContainer(void) {
+                    return this->c;
+                }
+            };
+
 /// @brief Implements IterableContainer and provides iterable std::stack class
-template<typename T, typename Container = std::deque<T>>
-class IterableStack : public IterableContainer<T, Container>, public std::stack<T, Container> {
- public:
-  IterableStack(std::stack<T, Container> stack_) {
-    std::size_t count_ = 0;
-    while (++count_ < base::consts::kMaxLogPerContainer && !stack_.empty()) {
-      this->push(stack_.top());
-      stack_.pop();
-    }
-  }
- private:
-  inline Container& getContainer(void) {
-    return this->c;
-  }
-};
-}  // namespace workarounds
+            template<typename T, typename Container = std::deque<T>>
+            class IterableStack : public IterableContainer<T, Container>, public std::stack<T, Container> {
+            public:
+                IterableStack(std::stack<T, Container> stack_) {
+                    std::size_t count_ = 0;
+                    while (++count_ < base::consts::kMaxLogPerContainer && !stack_.empty()) {
+                        this->push(stack_.top());
+                        stack_.pop();
+                    }
+                }
+
+            private:
+                inline Container &getContainer(void) {
+                    return this->c;
+                }
+            };
+        }  // namespace workarounds
 #endif  // defined(ELPP_STL_LOGGING)
 
 // Log message builder
@@ -3200,60 +3217,74 @@ return writeIterator(template_inst.begin(), template_inst.end(), template_inst.s
 }
 
 #if defined(ELPP_STL_LOGGING)
-                                                                                                                                    ELPP_ITERATOR_CONTAINER_LOG_TWO_ARG(std::vector)
-  ELPP_ITERATOR_CONTAINER_LOG_TWO_ARG(std::list)
-  ELPP_ITERATOR_CONTAINER_LOG_TWO_ARG(std::deque)
-  ELPP_ITERATOR_CONTAINER_LOG_THREE_ARG(std::set)
-  ELPP_ITERATOR_CONTAINER_LOG_THREE_ARG(std::multiset)
-  ELPP_ITERATOR_CONTAINER_LOG_FOUR_ARG(std::map)
-  ELPP_ITERATOR_CONTAINER_LOG_FOUR_ARG(std::multimap)
-  template <class T, class Container>
-  inline MessageBuilder& operator<<(const std::queue<T, Container>& queue_) {
-    base::workarounds::IterableQueue<T, Container> iterableQueue_ =
-      static_cast<base::workarounds::IterableQueue<T, Container> >(queue_);
-    return writeIterator(iterableQueue_.begin(), iterableQueue_.end(), iterableQueue_.size());
-  }
-  template <class T, class Container>
-  inline MessageBuilder& operator<<(const std::stack<T, Container>& stack_) {
-    base::workarounds::IterableStack<T, Container> iterableStack_ =
-      static_cast<base::workarounds::IterableStack<T, Container> >(stack_);
-    return writeIterator(iterableStack_.begin(), iterableStack_.end(), iterableStack_.size());
-  }
-  template <class T, class Container, class Comparator>
-  inline MessageBuilder& operator<<(const std::priority_queue<T, Container, Comparator>& priorityQueue_) {
-    base::workarounds::IterablePriorityQueue<T, Container, Comparator> iterablePriorityQueue_ =
-      static_cast<base::workarounds::IterablePriorityQueue<T, Container, Comparator> >(priorityQueue_);
-    return writeIterator(iterablePriorityQueue_.begin(), iterablePriorityQueue_.end(), iterablePriorityQueue_.size());
-  }
-  template <class First, class Second>
-  MessageBuilder& operator<<(const std::pair<First, Second>& pair_) {
-    m_logger->stream() << ELPP_LITERAL("(");
-    operator << (static_cast<First>(pair_.first));
-    m_logger->stream() << ELPP_LITERAL(", ");
-    operator << (static_cast<Second>(pair_.second));
-    m_logger->stream() << ELPP_LITERAL(")");
-    return *this;
-  }
-  template <std::size_t Size>
-  MessageBuilder& operator<<(const std::bitset<Size>& bitset_) {
-    m_logger->stream() << ELPP_LITERAL("[");
-    operator << (bitset_.to_string());
-    m_logger->stream() << ELPP_LITERAL("]");
-    return *this;
-  }
+
+            ELPP_ITERATOR_CONTAINER_LOG_TWO_ARG(std::vector)
+
+            ELPP_ITERATOR_CONTAINER_LOG_TWO_ARG(std::list)
+
+            ELPP_ITERATOR_CONTAINER_LOG_TWO_ARG(std::deque)
+
+            ELPP_ITERATOR_CONTAINER_LOG_THREE_ARG(std::set)
+
+            ELPP_ITERATOR_CONTAINER_LOG_THREE_ARG(std::multiset)
+
+            ELPP_ITERATOR_CONTAINER_LOG_FOUR_ARG(std::map)
+
+            ELPP_ITERATOR_CONTAINER_LOG_FOUR_ARG(std::multimap)
+
+            template<class T, class Container>
+            inline MessageBuilder &operator<<(const std::queue<T, Container> &queue_) {
+                base::workarounds::IterableQueue<T, Container> iterableQueue_ =
+                        static_cast<base::workarounds::IterableQueue<T, Container> >(queue_);
+                return writeIterator(iterableQueue_.begin(), iterableQueue_.end(), iterableQueue_.size());
+            }
+
+            template<class T, class Container>
+            inline MessageBuilder &operator<<(const std::stack<T, Container> &stack_) {
+                base::workarounds::IterableStack<T, Container> iterableStack_ =
+                        static_cast<base::workarounds::IterableStack<T, Container> >(stack_);
+                return writeIterator(iterableStack_.begin(), iterableStack_.end(), iterableStack_.size());
+            }
+
+            template<class T, class Container, class Comparator>
+            inline MessageBuilder &operator<<(const std::priority_queue<T, Container, Comparator> &priorityQueue_) {
+                base::workarounds::IterablePriorityQueue<T, Container, Comparator> iterablePriorityQueue_ =
+                        static_cast<base::workarounds::IterablePriorityQueue<T, Container, Comparator> >(priorityQueue_);
+                return writeIterator(iterablePriorityQueue_.begin(), iterablePriorityQueue_.end(),
+                                     iterablePriorityQueue_.size());
+            }
+
+            template<class First, class Second>
+            MessageBuilder &operator<<(const std::pair<First, Second> &pair_) {
+                m_logger->stream() << ELPP_LITERAL("(");
+                operator<<(static_cast<First>(pair_.first));
+                m_logger->stream() << ELPP_LITERAL(", ");
+                operator<<(static_cast<Second>(pair_.second));
+                m_logger->stream() << ELPP_LITERAL(")");
+                return *this;
+            }
+
+            template<std::size_t Size>
+            MessageBuilder &operator<<(const std::bitset<Size> &bitset_) {
+                m_logger->stream() << ELPP_LITERAL("[");
+                operator<<(bitset_.to_string());
+                m_logger->stream() << ELPP_LITERAL("]");
+                return *this;
+            }
+
 #  if defined(ELPP_LOG_STD_ARRAY)
-  template <class T, std::size_t Size>
-  inline MessageBuilder& operator<<(const std::array<T, Size>& array) {
-    return writeIterator(array.begin(), array.end(), array.size());
-  }
+            template <class T, std::size_t Size>
+            inline MessageBuilder& operator<<(const std::array<T, Size>& array) {
+              return writeIterator(array.begin(), array.end(), array.size());
+            }
 #  endif  // defined(ELPP_LOG_STD_ARRAY)
 #  if defined(ELPP_LOG_UNORDERED_MAP)
-  ELPP_ITERATOR_CONTAINER_LOG_FIVE_ARG(std::unordered_map)
-  ELPP_ITERATOR_CONTAINER_LOG_FIVE_ARG(std::unordered_multimap)
+            ELPP_ITERATOR_CONTAINER_LOG_FIVE_ARG(std::unordered_map)
+            ELPP_ITERATOR_CONTAINER_LOG_FIVE_ARG(std::unordered_multimap)
 #  endif  // defined(ELPP_LOG_UNORDERED_MAP)
 #  if defined(ELPP_LOG_UNORDERED_SET)
-  ELPP_ITERATOR_CONTAINER_LOG_FOUR_ARG(std::unordered_set)
-  ELPP_ITERATOR_CONTAINER_LOG_FOUR_ARG(std::unordered_multiset)
+            ELPP_ITERATOR_CONTAINER_LOG_FOUR_ARG(std::unordered_set)
+            ELPP_ITERATOR_CONTAINER_LOG_FOUR_ARG(std::unordered_multiset)
 #  endif  // defined(ELPP_LOG_UNORDERED_SET)
 #endif  // defined(ELPP_STL_LOGGING)
 #if defined(ELPP_QT_LOGGING)
@@ -3712,218 +3743,262 @@ writer(level, __FILE__, __LINE__, ELPP_FUNC, dispatchAction).construct(el_getVAL
 ELPP->validateNTimesCounter(__FILE__, __LINE__, n) && \
 writer(level, __FILE__, __LINE__, ELPP_FUNC, dispatchAction).construct(el_getVALength(__VA_ARGS__), __VA_ARGS__)
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
-                                                                                                                            class PerformanceTrackingData {
- public:
-  enum class DataType : base::type::EnumType {
-    Checkpoint = 1, Complete = 2
-  };
-  // Do not use constructor, will run into multiple definition error, use init(PerformanceTracker*)
-  explicit PerformanceTrackingData(DataType dataType) : m_performanceTracker(nullptr),
-    m_dataType(dataType), m_firstCheckpoint(false), m_file(""), m_line(0), m_func("") {}
-  inline const std::string* blockName(void) const;
-  inline const struct timeval* startTime(void) const;
-  inline const struct timeval* endTime(void) const;
-  inline const struct timeval* lastCheckpointTime(void) const;
-  inline const base::PerformanceTracker* performanceTracker(void) const {
-    return m_performanceTracker;
-  }
-  inline PerformanceTrackingData::DataType dataType(void) const {
-    return m_dataType;
-  }
-  inline bool firstCheckpoint(void) const {
-    return m_firstCheckpoint;
-  }
-  inline std::string checkpointId(void) const {
-    return m_checkpointId;
-  }
-  inline const char* file(void) const {
-    return m_file;
-  }
-  inline base::type::LineNumber line(void) const {
-    return m_line;
-  }
-  inline const char* func(void) const {
-    return m_func;
-  }
-  inline const base::type::string_t* formattedTimeTaken() const {
-    return &m_formattedTimeTaken;
-  }
-  inline const std::string& loggerId(void) const;
- private:
-  base::PerformanceTracker* m_performanceTracker;
-  base::type::string_t m_formattedTimeTaken;
-  PerformanceTrackingData::DataType m_dataType;
-  bool m_firstCheckpoint;
-  std::string m_checkpointId;
-  const char* m_file;
-  base::type::LineNumber m_line;
-  const char* m_func;
-  inline void init(base::PerformanceTracker* performanceTracker, bool firstCheckpoint = false) {
-    m_performanceTracker = performanceTracker;
-    m_firstCheckpoint = firstCheckpoint;
-  }
 
-  friend class el::base::PerformanceTracker;
-};
-namespace base {
+    class PerformanceTrackingData {
+    public:
+        enum class DataType : base::type::EnumType {
+            Checkpoint = 1, Complete = 2
+        };
+
+        // Do not use constructor, will run into multiple definition error, use init(PerformanceTracker*)
+        explicit PerformanceTrackingData(DataType dataType) : m_performanceTracker(nullptr),
+                                                              m_dataType(dataType), m_firstCheckpoint(false),
+                                                              m_file(""), m_line(0), m_func("") {}
+
+        inline const std::string *blockName(void) const;
+
+        inline const struct timeval *startTime(void) const;
+
+        inline const struct timeval *endTime(void) const;
+
+        inline const struct timeval *lastCheckpointTime(void) const;
+
+        inline const base::PerformanceTracker *performanceTracker(void) const {
+            return m_performanceTracker;
+        }
+
+        inline PerformanceTrackingData::DataType dataType(void) const {
+            return m_dataType;
+        }
+
+        inline bool firstCheckpoint(void) const {
+            return m_firstCheckpoint;
+        }
+
+        inline std::string checkpointId(void) const {
+            return m_checkpointId;
+        }
+
+        inline const char *file(void) const {
+            return m_file;
+        }
+
+        inline base::type::LineNumber line(void) const {
+            return m_line;
+        }
+
+        inline const char *func(void) const {
+            return m_func;
+        }
+
+        inline const base::type::string_t *formattedTimeTaken() const {
+            return &m_formattedTimeTaken;
+        }
+
+        inline const std::string &loggerId(void) const;
+
+    private:
+        base::PerformanceTracker *m_performanceTracker;
+        base::type::string_t m_formattedTimeTaken;
+        PerformanceTrackingData::DataType m_dataType;
+        bool m_firstCheckpoint;
+        std::string m_checkpointId;
+        const char *m_file;
+        base::type::LineNumber m_line;
+        const char *m_func;
+
+        inline void init(base::PerformanceTracker *performanceTracker, bool firstCheckpoint = false) {
+            m_performanceTracker = performanceTracker;
+            m_firstCheckpoint = firstCheckpoint;
+        }
+
+        friend class el::base::PerformanceTracker;
+    };
+    namespace base {
 /// @brief Represents performanceTracker block of code that conditionally adds performance status to log
 ///        either when goes outside the scope of when checkpoint() is called
-class PerformanceTracker : public base::threading::ThreadSafe, public Loggable {
- public:
-  PerformanceTracker(const std::string& blockName,
-                     base::TimestampUnit timestampUnit = base::TimestampUnit::Millisecond,
-                     const std::string& loggerId = std::string(el::base::consts::kPerformanceLoggerId),
-                     bool scopedLog = true, Level level = base::consts::kPerformanceTrackerDefaultLevel);
-  /// @brief Copy constructor
-  PerformanceTracker(const PerformanceTracker& t) :
-    m_blockName(t.m_blockName), m_timestampUnit(t.m_timestampUnit), m_loggerId(t.m_loggerId), m_scopedLog(t.m_scopedLog),
-    m_level(t.m_level), m_hasChecked(t.m_hasChecked), m_lastCheckpointId(t.m_lastCheckpointId), m_enabled(t.m_enabled),
-    m_startTime(t.m_startTime), m_endTime(t.m_endTime), m_lastCheckpointTime(t.m_lastCheckpointTime) {
-  }
-  virtual ~PerformanceTracker(void);
-  /// @brief A checkpoint for current performanceTracker block.
-  void checkpoint(const std::string& id = std::string(), const char* file = __FILE__,
-                  base::type::LineNumber line = __LINE__,
-                  const char* func = "");
-  inline Level level(void) const {
-    return m_level;
-  }
- private:
-  std::string m_blockName;
-  base::TimestampUnit m_timestampUnit;
-  std::string m_loggerId;
-  bool m_scopedLog;
-  Level m_level;
-  bool m_hasChecked;
-  std::string m_lastCheckpointId;
-  bool m_enabled;
-  struct timeval m_startTime, m_endTime, m_lastCheckpointTime;
+        class PerformanceTracker : public base::threading::ThreadSafe, public Loggable {
+        public:
+            PerformanceTracker(const std::string &blockName,
+                               base::TimestampUnit timestampUnit = base::TimestampUnit::Millisecond,
+                               const std::string &loggerId = std::string(el::base::consts::kPerformanceLoggerId),
+                               bool scopedLog = true, Level level = base::consts::kPerformanceTrackerDefaultLevel);
 
-  PerformanceTracker(void);
+            /// @brief Copy constructor
+            PerformanceTracker(const PerformanceTracker &t) :
+                    m_blockName(t.m_blockName), m_timestampUnit(t.m_timestampUnit), m_loggerId(t.m_loggerId),
+                    m_scopedLog(t.m_scopedLog),
+                    m_level(t.m_level), m_hasChecked(t.m_hasChecked), m_lastCheckpointId(t.m_lastCheckpointId),
+                    m_enabled(t.m_enabled),
+                    m_startTime(t.m_startTime), m_endTime(t.m_endTime), m_lastCheckpointTime(t.m_lastCheckpointTime) {
+            }
 
-  friend class el::PerformanceTrackingData;
-  friend class base::DefaultPerformanceTrackingCallback;
+            virtual ~PerformanceTracker(void);
 
-  const inline base::type::string_t getFormattedTimeTaken() const {
-    return getFormattedTimeTaken(m_startTime);
-  }
+            /// @brief A checkpoint for current performanceTracker block.
+            void checkpoint(const std::string &id = std::string(), const char *file = __FILE__,
+                            base::type::LineNumber line = __LINE__,
+                            const char *func = "");
 
-  const base::type::string_t getFormattedTimeTaken(struct timeval startTime) const;
+            inline Level level(void) const {
+                return m_level;
+            }
 
-  virtual inline void log(el::base::type::ostream_t& os) const {
-    os << getFormattedTimeTaken();
-  }
-};
-class DefaultPerformanceTrackingCallback : public PerformanceTrackingCallback {
- protected:
-  void handle(const PerformanceTrackingData* data) {
-    m_data = data;
-    base::type::stringstream_t ss;
-    if (m_data->dataType() == PerformanceTrackingData::DataType::Complete) {
-      ss << ELPP_LITERAL("Executed [") << m_data->blockName()->c_str() << ELPP_LITERAL("] in [") <<
-         *m_data->formattedTimeTaken() << ELPP_LITERAL("]");
-    } else {
-      ss << ELPP_LITERAL("Performance checkpoint");
-      if (!m_data->checkpointId().empty()) {
-        ss << ELPP_LITERAL(" [") << m_data->checkpointId().c_str() << ELPP_LITERAL("]");
-      }
-      ss << ELPP_LITERAL(" for block [") << m_data->blockName()->c_str() << ELPP_LITERAL("] : [") <<
-         *m_data->performanceTracker();
-      if (!ELPP->hasFlag(LoggingFlag::DisablePerformanceTrackingCheckpointComparison)
-          && m_data->performanceTracker()->m_hasChecked) {
-        ss << ELPP_LITERAL(" ([") << *m_data->formattedTimeTaken() << ELPP_LITERAL("] from ");
-        if (m_data->performanceTracker()->m_lastCheckpointId.empty()) {
-          ss << ELPP_LITERAL("last checkpoint");
-        } else {
-          ss << ELPP_LITERAL("checkpoint '") << m_data->performanceTracker()->m_lastCheckpointId.c_str() << ELPP_LITERAL("'");
-        }
-        ss << ELPP_LITERAL(")]");
-      } else {
-        ss << ELPP_LITERAL("]");
-      }
+        private:
+            std::string m_blockName;
+            base::TimestampUnit m_timestampUnit;
+            std::string m_loggerId;
+            bool m_scopedLog;
+            Level m_level;
+            bool m_hasChecked;
+            std::string m_lastCheckpointId;
+            bool m_enabled;
+            struct timeval m_startTime, m_endTime, m_lastCheckpointTime;
+
+            PerformanceTracker(void);
+
+            friend class el::PerformanceTrackingData;
+
+            friend class base::DefaultPerformanceTrackingCallback;
+
+            const inline base::type::string_t getFormattedTimeTaken() const {
+                return getFormattedTimeTaken(m_startTime);
+            }
+
+            const base::type::string_t getFormattedTimeTaken(struct timeval startTime) const;
+
+            virtual inline void log(el::base::type::ostream_t &os) const {
+                os << getFormattedTimeTaken();
+            }
+        };
+
+        class DefaultPerformanceTrackingCallback : public PerformanceTrackingCallback {
+        protected:
+            void handle(const PerformanceTrackingData *data) {
+                m_data = data;
+                base::type::stringstream_t ss;
+                if (m_data->dataType() == PerformanceTrackingData::DataType::Complete) {
+                    ss << ELPP_LITERAL("Executed [") << m_data->blockName()->c_str() << ELPP_LITERAL("] in [") <<
+                       *m_data->formattedTimeTaken() << ELPP_LITERAL("]");
+                } else {
+                    ss << ELPP_LITERAL("Performance checkpoint");
+                    if (!m_data->checkpointId().empty()) {
+                        ss << ELPP_LITERAL(" [") << m_data->checkpointId().c_str() << ELPP_LITERAL("]");
+                    }
+                    ss << ELPP_LITERAL(" for block [") << m_data->blockName()->c_str() << ELPP_LITERAL("] : [") <<
+                       *m_data->performanceTracker();
+                    if (!ELPP->hasFlag(LoggingFlag::DisablePerformanceTrackingCheckpointComparison)
+                        && m_data->performanceTracker()->m_hasChecked) {
+                        ss << ELPP_LITERAL(" ([") << *m_data->formattedTimeTaken() << ELPP_LITERAL("] from ");
+                        if (m_data->performanceTracker()->m_lastCheckpointId.empty()) {
+                            ss << ELPP_LITERAL("last checkpoint");
+                        } else {
+                            ss << ELPP_LITERAL("checkpoint '")
+                               << m_data->performanceTracker()->m_lastCheckpointId.c_str() << ELPP_LITERAL("'");
+                        }
+                        ss << ELPP_LITERAL(")]");
+                    } else {
+                        ss << ELPP_LITERAL("]");
+                    }
+                }
+                el::base::Writer(m_data->performanceTracker()->level(), m_data->file(), m_data->line(),
+                                 m_data->func()).construct(1,
+                                                           m_data->loggerId().c_str()) << ss.str();
+            }
+
+        private:
+            const PerformanceTrackingData *m_data;
+        };
+    }  // namespace base
+    inline const std::string *PerformanceTrackingData::blockName() const {
+        return const_cast<const std::string *>(&m_performanceTracker->m_blockName);
     }
-    el::base::Writer(m_data->performanceTracker()->level(), m_data->file(), m_data->line(), m_data->func()).construct(1,
-        m_data->loggerId().c_str()) << ss.str();
-  }
- private:
-  const PerformanceTrackingData* m_data;
-};
-}  // namespace base
-inline const std::string* PerformanceTrackingData::blockName() const {
-  return const_cast<const std::string*>(&m_performanceTracker->m_blockName);
-}
-inline const struct timeval* PerformanceTrackingData::startTime() const {
-  return const_cast<const struct timeval*>(&m_performanceTracker->m_startTime);
-}
-inline const struct timeval* PerformanceTrackingData::endTime() const {
-  return const_cast<const struct timeval*>(&m_performanceTracker->m_endTime);
-}
-inline const struct timeval* PerformanceTrackingData::lastCheckpointTime() const {
-  return const_cast<const struct timeval*>(&m_performanceTracker->m_lastCheckpointTime);
-}
-inline const std::string& PerformanceTrackingData::loggerId(void) const {
-  return m_performanceTracker->m_loggerId;
-}
+
+    inline const struct timeval *PerformanceTrackingData::startTime() const {
+        return const_cast<const struct timeval *>(&m_performanceTracker->m_startTime);
+    }
+
+    inline const struct timeval *PerformanceTrackingData::endTime() const {
+        return const_cast<const struct timeval *>(&m_performanceTracker->m_endTime);
+    }
+
+    inline const struct timeval *PerformanceTrackingData::lastCheckpointTime() const {
+        return const_cast<const struct timeval *>(&m_performanceTracker->m_lastCheckpointTime);
+    }
+
+    inline const std::string &PerformanceTrackingData::loggerId(void) const {
+        return m_performanceTracker->m_loggerId;
+    }
+
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
     namespace base {
 /// @brief Contains some internal debugging tools like crash handler and stack tracer
         namespace debug {
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_CRASH_LOG)
-                                                                                                                                    class StackTrace : base::NoCopy {
- public:
-  static const unsigned int kMaxStack = 64;
-  static const unsigned int kStackStart = 2;  // We want to skip c'tor and StackTrace::generateNew()
-  class StackTraceEntry {
-   public:
-    StackTraceEntry(std::size_t index, const std::string& loc, const std::string& demang, const std::string& hex,
-                    const std::string& addr);
-    StackTraceEntry(std::size_t index, const std::string& loc) :
-      m_index(index),
-      m_location(loc) {
-    }
-    std::size_t m_index;
-    std::string m_location;
-    std::string m_demangled;
-    std::string m_hex;
-    std::string m_addr;
-    friend std::ostream& operator<<(std::ostream& ss, const StackTraceEntry& si);
 
-   private:
-    StackTraceEntry(void);
-  };
+            class StackTrace : base::NoCopy {
+            public:
+                static const unsigned int kMaxStack = 64;
+                static const unsigned int kStackStart = 2;  // We want to skip c'tor and StackTrace::generateNew()
+                class StackTraceEntry {
+                public:
+                    StackTraceEntry(std::size_t index, const std::string &loc, const std::string &demang,
+                                    const std::string &hex,
+                                    const std::string &addr);
 
-  StackTrace(void) {
-    generateNew();
-  }
+                    StackTraceEntry(std::size_t index, const std::string &loc) :
+                            m_index(index),
+                            m_location(loc) {
+                    }
 
-  virtual ~StackTrace(void) {
-  }
+                    std::size_t m_index;
+                    std::string m_location;
+                    std::string m_demangled;
+                    std::string m_hex;
+                    std::string m_addr;
 
-  inline std::vector<StackTraceEntry>& getLatestStack(void) {
-    return m_stack;
-  }
+                    friend std::ostream &operator<<(std::ostream &ss, const StackTraceEntry &si);
 
-  friend std::ostream& operator<<(std::ostream& os, const StackTrace& st);
+                private:
+                    StackTraceEntry(void);
+                };
 
- private:
-  std::vector<StackTraceEntry> m_stack;
+                StackTrace(void) {
+                    generateNew();
+                }
 
-  void generateNew(void);
-};
+                virtual ~StackTrace(void) {
+                }
+
+                inline std::vector<StackTraceEntry> &getLatestStack(void) {
+                    return m_stack;
+                }
+
+                friend std::ostream &operator<<(std::ostream &os, const StackTrace &st);
+
+            private:
+                std::vector<StackTraceEntry> m_stack;
+
+                void generateNew(void);
+            };
+
 /// @brief Handles unexpected crashes
-class CrashHandler : base::NoCopy {
- public:
-  typedef void (*Handler)(int);
+            class CrashHandler : base::NoCopy {
+            public:
+                typedef void (*Handler)(int);
 
-  explicit CrashHandler(bool useDefault);
-  explicit CrashHandler(const Handler& cHandler) {
-    setHandler(cHandler);
-  }
-  void setHandler(const Handler& cHandler);
+                explicit CrashHandler(bool useDefault);
 
- private:
-  Handler m_handler;
-};
+                explicit CrashHandler(const Handler &cHandler) {
+                    setHandler(cHandler);
+                }
+
+                void setHandler(const Handler &cHandler);
+
+            private:
+                Handler m_handler;
+            };
+
 #else
 
             class CrashHandler {
@@ -3943,8 +4018,8 @@ el::base::type::ostream_t& operator<<(el::base::type::ostream_t& OutputStreamIns
     public:
         SysLogInitializer(const char *processIdent, int options = 0, int facility = 0) {
 #if defined(ELPP_SYSLOG)
-                                                                                                                                    (void)base::consts::kSysLogLoggerId;
-    openlog(processIdent, options, facility);
+            (void) base::consts::kSysLogLoggerId;
+            openlog(processIdent, options, facility);
 #else
             ELPP_UNUSED(processIdent);
             ELPP_UNUSED(options);
@@ -3994,22 +4069,26 @@ el::base::type::ostream_t& operator<<(el::base::type::ostream_t& OutputStreamIns
         }
 
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_CRASH_LOG)
-                                                                                                                                /// @brief Overrides default crash handler and installs custom handler.
-  /// @param crashHandler A functor with no return type that takes single int argument.
-  ///        Handler is a typedef with specification: void (*Handler)(int)
-  static inline void setCrashHandler(const el::base::debug::CrashHandler::Handler& crashHandler) {
-    el::elCrashHandler.setHandler(crashHandler);
-  }
-  /// @brief Abort due to crash with signal in parameter
-  /// @param sig Crash signal
-  static void crashAbort(int sig, const char* sourceFile = "", unsigned int long line = 0);
-  /// @brief Logs reason of crash as per sig
-  /// @param sig Crash signal
-  /// @param stackTraceIfAvailable Includes stack trace if available
-  /// @param level Logging level
-  /// @param logger Logger to use for logging
-  static void logCrashReason(int sig, bool stackTraceIfAvailable = false,
-                             Level level = Level::Fatal, const char* logger = base::consts::kDefaultLoggerId);
+
+        /// @brief Overrides default crash handler and installs custom handler.
+        /// @param crashHandler A functor with no return type that takes single int argument.
+        ///        Handler is a typedef with specification: void (*Handler)(int)
+        static inline void setCrashHandler(const el::base::debug::CrashHandler::Handler &crashHandler) {
+            el::elCrashHandler.setHandler(crashHandler);
+        }
+
+        /// @brief Abort due to crash with signal in parameter
+        /// @param sig Crash signal
+        static void crashAbort(int sig, const char *sourceFile = "", unsigned int long line = 0);
+
+        /// @brief Logs reason of crash as per sig
+        /// @param sig Crash signal
+        /// @param stackTraceIfAvailable Includes stack trace if available
+        /// @param level Logging level
+        /// @param logger Logger to use for logging
+        static void logCrashReason(int sig, bool stackTraceIfAvailable = false,
+                                   Level level = Level::Fatal, const char *logger = base::consts::kDefaultLoggerId);
+
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_CRASH_LOG)
 
         /// @brief Installs pre rollout callback, this callback is triggered when log file is about to be rolled out
@@ -4041,20 +4120,24 @@ el::base::type::ostream_t& operator<<(el::base::type::ostream_t& OutputStreamIns
         }
 
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
-                                                                                                                                /// @brief Installs post performance tracking callback, this callback is triggered when performance tracking is finished
-  template <typename T>
-  static inline bool installPerformanceTrackingCallback(const std::string& id) {
-    return ELPP->installPerformanceTrackingCallback<T>(id);
-  }
-  /// @brief Uninstalls post performance tracking handler
-  template <typename T>
-  static inline void uninstallPerformanceTrackingCallback(const std::string& id) {
-    ELPP->uninstallPerformanceTrackingCallback<T>(id);
-  }
-  template <typename T>
-  static inline T* performanceTrackingCallback(const std::string& id) {
-    return ELPP->performanceTrackingCallback<T>(id);
-  }
+
+        /// @brief Installs post performance tracking callback, this callback is triggered when performance tracking is finished
+        template<typename T>
+        static inline bool installPerformanceTrackingCallback(const std::string &id) {
+            return ELPP->installPerformanceTrackingCallback<T>(id);
+        }
+
+        /// @brief Uninstalls post performance tracking handler
+        template<typename T>
+        static inline void uninstallPerformanceTrackingCallback(const std::string &id) {
+            ELPP->uninstallPerformanceTrackingCallback<T>(id);
+        }
+
+        template<typename T>
+        static inline T *performanceTrackingCallback(const std::string &id) {
+            return ELPP->performanceTrackingCallback<T>(id);
+        }
+
 #endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
 
         /// @brief Converts template to std::string - useful for loggable classes to log containers within log(std::ostream&) const
@@ -4680,7 +4763,7 @@ C##LEVEL##_IF(el::base::PErrorWriter, (ELPP_DEBUG_LOG) && (condition), el::base:
 #undef DSYSLOG_AFTER_N
 #undef DSYSLOG_N_TIMES
 #if defined(ELPP_SYSLOG)
-                                                                                                                        #  define CSYSLOG(LEVEL, ...)\
+#  define CSYSLOG(LEVEL, ...)\
 C##LEVEL(el::base::Writer, el::base::DispatchAction::SysLog, __VA_ARGS__)
 #  define CSYSLOG_IF(condition, LEVEL, ...)\
 C##LEVEL##_IF(el::base::Writer, condition, el::base::DispatchAction::SysLog, __VA_ARGS__)
