@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(dh_camera_demo)
 
-set(CMAKE_CXX_STANDARD 20)
-
 set(DH_CAM_PATH /home/trantuan/Galaxy_camera)
 
 add_compile_options(
